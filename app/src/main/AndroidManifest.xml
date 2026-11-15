@@ -5,6 +5,8 @@
     <application
         android:allowBackup="true"
         android:label="FerBrows"
+        android:icon="@drawable/ic_ferbrows"
+        android:roundIcon="@drawable/ic_ferbrows"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false"
         android:supportsRtl="true">
