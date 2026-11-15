@@ -37,6 +37,7 @@ JavaScript is enabled by default for website compatibility and can be disabled i
 - `BrowserStore.kt`: persisted tabs, bookmarks and history.
 - `BrowserSettings.kt` / `BrowserSettingsDialog.kt`: browser preferences and settings UI.
 - `WelcomeDialog.kt`: first-run introduction.
+- `STORE_LISTING.md`: store listing draft and real-device screenshot checklist.
 - `BrowserDownloadsStore.kt` / `DownloadsDialog.kt`: tracked downloads and file actions.
 - `BookmarkEditDialog.kt`: bookmark editing.
 - `BrowserNavigation.kt`: URL/search input validation.
