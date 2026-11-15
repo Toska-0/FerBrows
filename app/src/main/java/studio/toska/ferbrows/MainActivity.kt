@@ -262,7 +262,15 @@ private fun FerBrowsApp() {
         onDispose { webViews.values.toList().forEach { it.stopLoading(); it.destroy() }; webViews.clear() }
     }
     fun persistBookmarks() { preferences.edit().putStringSet("bookmarks", bookmarks.toSet()).apply() }
-    fun switchTo(tab: BrowserTab) { activeTabId = tab.id; updateTab(tab.url, tab.title) }
+    fun switchTo(tab: BrowserTab) {
+        activeTabId = tab.id
+        updateTab(tab.url, tab.title)
+        val selected = webViews[tab.id]
+        canBack = selected?.canGoBack() == true
+        canForward = selected?.canGoForward() == true
+        loading = false
+        progress = 0
+    }
     BackHandler(enabled = tabDialog || menuDialog || showBookmarks || showHistory || webView.canGoBack() || tabs.size > 1) {
         when {
             tabDialog -> tabDialog = false
@@ -309,6 +317,7 @@ private fun FerBrowsApp() {
                         currentUrl = ""
                         address = ""
                         pageTitle = "Новая вкладка"
+                        canBack = false; canForward = false; loading = false; progress = 0
                     },
                     onTabs = { tabDialog = true },
                     onMenu = { menuDialog = true }
@@ -430,6 +439,7 @@ private fun FerBrowsApp() {
                     currentUrl = ""
                     address = ""
                     pageTitle = "Новая вкладка"
+                    canBack = false; canForward = false; loading = false; progress = 0
                     tabDialog = false
                 }) { Text("Новая вкладка", color = Lime) }
             }
