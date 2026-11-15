@@ -143,6 +143,10 @@ private fun FerBrowsApp() {
     var menuDialog by remember { mutableStateOf(false) }
     var showBookmarks by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var showExitConfirm by remember { mutableStateOf(false) }
+    val settingsStore = remember { BrowserSettingsStore(context) }
+    var browserSettings by remember { mutableStateOf(settingsStore.load()) }
     val store = remember { BrowserStore(context) }
     val restoredTabs = remember { store.loadTabs() }
     var activeTabId by remember { mutableIntStateOf(store.loadActiveTabId().takeIf { id -> restoredTabs.any { it.id == id } } ?: restoredTabs.firstOrNull()?.id ?: 1) }
@@ -194,7 +198,7 @@ private fun FerBrowsApp() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            settings.javaScriptEnabled = true
+            settings.javaScriptEnabled = browserSettings.javaScriptEnabled
             settings.domStorageEnabled = true
             settings.allowFileAccess = false
             settings.allowContentAccess = true
@@ -251,7 +255,7 @@ private fun FerBrowsApp() {
             }
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
-                    if (TrackerProtection.shouldBlock(request?.url?.host)) {
+                    if (browserSettings.trackerProtectionEnabled && TrackerProtection.shouldBlock(request?.url?.host)) {
                         return android.webkit.WebResourceResponse(
                             "text/plain", "UTF-8", 204, "Blocked by FerBrows tracker protection",
                             emptyMap(), ByteArrayInputStream(ByteArray(0))
@@ -353,6 +357,7 @@ private fun FerBrowsApp() {
     }
     DisposableEffect(Unit) {
         onDispose {
+            webViews.forEach { (tabId, view) -> persistWebViewState(tabId, view) }
             webViews.values.toList().forEach { view ->
                 (view.parent as? ViewGroup)?.removeView(view)
                 view.stopLoading(); view.destroy()
@@ -420,24 +425,24 @@ private fun FerBrowsApp() {
         Toast.makeText(context, "Приватная вкладка: данные не сохраняются в истории и списке вкладок", Toast.LENGTH_SHORT).show()
     }
 
-    BackHandler(enabled = tabDialog || menuDialog || showBookmarks || showHistory || webView.canGoBack() || tabs.size > 1) {
+    BackHandler(enabled = true) {
         when {
             tabDialog -> tabDialog = false
             menuDialog -> menuDialog = false
             showBookmarks -> showBookmarks = false
             showHistory -> showHistory = false
+            showSettings -> showSettings = false
+            showExitConfirm -> showExitConfirm = false
             webView.canGoBack() -> webView.goBack()
-            tabs.size > 1 -> {
-                closeTab(tabs.first { it.id == activeTabId })
-            }
-            else -> { currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; webView.loadUrl("about:blank") }
+            tabs.size > 1 -> closeTab(tabs.first { it.id == activeTabId })
+            else -> showExitConfirm = true
         }
     }
 
     fun navigate(raw: String) {
         val input = raw.trim()
         if (input.isEmpty()) return
-        val target = BrowserNavigation.resolveInput(input)
+        val target = BrowserNavigation.resolveInput(input, browserSettings.searchEngine)
         if (target == null) {
             pageError = "Некорректный адрес или неподдерживаемая схема. Используй HTTP(S) или поисковый запрос."
             return
@@ -523,11 +528,14 @@ private fun FerBrowsApp() {
                     onBack = { if (webView.canGoBack()) webView.goBack() },
                     onForward = { if (webView.canGoForward()) webView.goForward() },
                     onHome = {
-                        currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; pageError = null
-                        webView.loadUrl("about:blank")
-                        val i = tabs.indexOfFirst { it.id == activeTabId }
-                        if (i >= 0) tabs[i] = tabs[i].copy(title = "Новая вкладка", url = "")
-                        persistTabs()
+                        if (browserSettings.homePage.isNotBlank()) navigate(browserSettings.homePage)
+                        else {
+                            currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; pageError = null
+                            webView.loadUrl("about:blank")
+                            val i = tabs.indexOfFirst { it.id == activeTabId }
+                            if (i >= 0) tabs[i] = tabs[i].copy(title = "Новая вкладка", url = "")
+                            persistTabs()
+                        }
                     },
                     onTabs = { tabDialog = true },
                     tabCount = tabs.size
@@ -597,6 +605,10 @@ private fun FerBrowsApp() {
                         addPrivateTab()
                         menuDialog = false
                     }
+                    MenuRow("Настройки", "Поиск, домашняя страница, приватность и данные") {
+                        showSettings = true
+                        menuDialog = false
+                    }
                     MenuRow("О браузере", "FerBrows 0.1.0 · Chromium WebView") {
                         menuDialog = false
                     }
@@ -633,6 +645,47 @@ private fun FerBrowsApp() {
             emptyText = "История пока пуста",
             onDismiss = { showHistory = false },
             onSelect = { url -> showHistory = false; navigate(url) }
+        )
+    }
+    
+    if (showSettings) {
+        BrowserSettingsDialog(
+            settings = browserSettings,
+            onSave = { updated ->
+                browserSettings = updated
+                settingsStore.save(updated)
+                webViews.values.forEach { it.settings.javaScriptEnabled = updated.javaScriptEnabled }
+            },
+            onClearHistory = {
+                history.clear()
+                persistHistory()
+                Toast.makeText(context, "История очищена", Toast.LENGTH_SHORT).show()
+            },
+            onClearSiteData = {
+                webViews.values.forEach { it.clearCache(true); it.clearFormData() }
+                android.webkit.CookieManager.getInstance().removeAllCookies(null)
+                android.webkit.CookieManager.getInstance().flush()
+                android.webkit.WebStorage.getInstance().deleteAllData()
+                Toast.makeText(context, "Кэш, cookies и данные сайтов очищены", Toast.LENGTH_SHORT).show()
+            },
+            onDismiss = { showSettings = false }
+        )
+    }
+
+    if (showExitConfirm) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirm = false },
+            containerColor = Panel,
+            title = { Text("Выйти из FerBrows?", color = White) },
+            text = { Text("Открытые обычные вкладки будут сохранены.", color = Muted) },
+            confirmButton = {
+                TextButton(onClick = { (context as? ComponentActivity)?.finish() }) {
+                    Text("Выйти", color = Lime)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitConfirm = false }) { Text("Остаться", color = Muted) }
+            }
         )
     }
 }
