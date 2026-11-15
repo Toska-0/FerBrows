@@ -10,8 +10,8 @@ object BrowserTabReducer {
     fun select(state: BrowserTabsState, id: Int): BrowserTabsState =
         if (state.tabs.any { it.id == id }) state.copy(activeTabId = id) else state
 
-    fun add(state: BrowserTabsState): BrowserTabsState {
-        val tab = BrowserTab(state.nextTabId, "Новая вкладка", "")
+    fun add(state: BrowserTabsState, isPrivate: Boolean = false): BrowserTabsState {
+        val tab = BrowserTab(state.nextTabId, if (isPrivate) "Приватная вкладка" else "Новая вкладка", "", isPrivate)
         return state.copy(tabs = state.tabs + tab, activeTabId = tab.id, nextTabId = state.nextTabId + 1)
     }
 
