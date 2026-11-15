@@ -443,6 +443,9 @@ private fun FerBrowsApp() {
 
                 AddressBar(
                     value = address,
+                    isSecure = currentUrl.startsWith("https://", ignoreCase = true) && !loading,
+                    isInsecure = currentUrl.startsWith("http://", ignoreCase = true),
+                    canBookmark = currentUrl.startsWith("https://", true) || currentUrl.startsWith("http://", true),
                     loading = loading,
                     progress = progress,
                     onValueChange = { address = it },
