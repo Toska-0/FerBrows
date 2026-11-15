@@ -143,7 +143,7 @@ fun AddressBar(
 }
 
 @Composable
-fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: List<String>) {
+fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: List<String>, trackerProtectionEnabled: Boolean = true) {
     var query by remember { mutableStateOf("") }
     val sites = listOf(
         Triple("Google", "Поиск в интернете", "https://www.google.com"),
@@ -234,7 +234,7 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
             Spacer(Modifier.height(28.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Shield, null, tint = Green, modifier = Modifier.size(15.dp))
-                Text(" Safe Browsing · блокировка известных трекеров", color = Muted, fontSize = 9.sp)
+                Text(if (trackerProtectionEnabled) " Safe Browsing · блокировка известных трекеров включена" else " Safe Browsing · блокировка трекеров отключена", color = Muted, fontSize = 9.sp)
             }
             Spacer(Modifier.height(30.dp))
         }
