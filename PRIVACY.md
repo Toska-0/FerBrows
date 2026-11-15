@@ -6,7 +6,7 @@ FerBrows is an early-stage Android browser. This policy describes the data handl
 
 ## Data stored on the device
 
-FerBrows stores browser preferences, ordinary open-tab metadata, bookmarks and a limited browsing history locally in Android application storage. Website cookies, cache and site storage are handled by Android System WebView. The application does not provide account sign-in, cloud synchronization, or its own analytics service.
+FerBrows stores browser preferences, ordinary open-tab metadata, bookmarks and a limited browsing history locally in Android application storage. Website cookies, cache and site storage are handled by Android System WebView. The application does not provide account sign-in, cloud synchronization, or its own analytics service. Android application backup is disabled for FerBrows.
 
 Downloaded files are handed to Android DownloadManager and saved in the app-specific external Downloads directory. Android removes app-specific external files when FerBrows is uninstalled. Files may be opened from the in-app downloads list.
 
