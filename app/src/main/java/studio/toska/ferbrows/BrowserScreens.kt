@@ -290,11 +290,30 @@ fun ToolbarButton(icon: ImageVector, description: String, enabled: Boolean, onCl
 
 @Composable
 fun MenuRow(title: String, subtitle: String, onClick: () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).clickable(onClick = onClick).padding(12.dp)
+    val icon = when {
+        title.contains("Закладки") -> Icons.Filled.Bookmark
+        title.contains("История") -> Icons.Filled.History
+        title.contains("приват", ignoreCase = true) -> Icons.Filled.Lock
+        title.contains("Загрузки") -> Icons.Filled.Download
+        title.contains("Настройки") -> Icons.Filled.Settings
+        title.contains("Политика") -> Icons.Filled.Shield
+        title.contains("ошибке") -> Icons.Filled.BugReport
+        else -> Icons.Filled.MoreHoriz
+    }
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick).background(PanelSoft.copy(alpha = 0.55f))
+            .padding(horizontal = 13.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, color = White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-        Text(subtitle, color = Muted, fontSize = 11.sp)
+        Box(Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(Lime.copy(alpha = 0.10f)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = Lime, modifier = Modifier.size(19.dp))
+        }
+        Column(Modifier.weight(1f).padding(start = 11.dp)) {
+            Text(title, color = White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            Text(subtitle, color = Muted, fontSize = 10.sp)
+        }
+        Icon(Icons.Filled.ChevronRight, null, tint = Muted, modifier = Modifier.size(18.dp))
     }
 }
 
