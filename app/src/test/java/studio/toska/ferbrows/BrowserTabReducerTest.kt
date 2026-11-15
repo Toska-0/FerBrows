@@ -33,7 +33,6 @@ class BrowserTabReducerTest {
         assertEquals(8, next.activeTabId)
         assertEquals(9, next.nextTabId)
     }
-}
 
     @Test fun selectingExistingTabChangesOnlyActiveId() {
         val initial = BrowserTabsState(
@@ -52,7 +51,7 @@ class BrowserTabReducerTest {
         assertEquals(initial, BrowserTabReducer.select(initial, 99))
     }
 
-    @Test fun privateTabIsMarkedAndReducerDoesNotPersistItByItself() {
+    @Test fun privateTabIsMarkedByReducer() {
         val initial = BrowserTabsState(listOf(BrowserTab(1, "A", "")), 1, 2)
         val next = BrowserTabReducer.add(initial, isPrivate = true)
         assertEquals(true, next.tabs.last().isPrivate)
@@ -69,5 +68,5 @@ class BrowserTabReducerTest {
         val next = BrowserTabReducer.close(initial, 2)
         assertEquals(1, next.activeTabId)
         assertEquals(listOf(1), next.tabs.map { it.id })
-    
+    }
 }
