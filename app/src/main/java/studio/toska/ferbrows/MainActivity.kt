@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
+import android.os.Parcel
+import android.util.Base64
 import android.content.Intent
 import android.net.Uri
 import android.app.DownloadManager
@@ -159,6 +161,21 @@ private fun FerBrowsApp() {
     fun persistBookmarks() = store.saveBookmarks(bookmarks.toList())
     fun persistHistory() = store.saveHistory(history.toList())
 
+    fun persistWebViewState(tabId: Int, view: WebView?) {
+        if (view == null || tabs.firstOrNull { it.id == tabId }?.isPrivate == true) return
+        runCatching {
+            val bundle = Bundle()
+            view.saveState(bundle)
+            val parcel = Parcel.obtain()
+            try {
+                bundle.writeToParcel(parcel, 0)
+                val bytes = parcel.marshall()
+                if (bytes.size <= 500_000) store.saveWebViewState(tabId, Base64.encodeToString(bytes, Base64.NO_WRAP))
+                else store.clearWebViewState(tabId)
+            } finally { parcel.recycle() }
+        }.onFailure { store.clearWebViewState(tabId) }
+    }
+
     fun updateTab(url: String, title: String) {
         currentUrl = url
         address = url
@@ -254,6 +271,7 @@ private fun FerBrowsApp() {
                 }
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                    if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) store.clearWebViewState(tabId)
                     if (activeTabId == tabId) pageError = null
                     if (url == "about:blank") {
                         if (activeTabId == tabId) { currentUrl = ""; address = ""; pageTitle = "Новая вкладка" }
@@ -299,6 +317,7 @@ private fun FerBrowsApp() {
                         if (activeTabId == tabId) { currentUrl = url; address = url; pageTitle = title; pageError = null }
                     }
                     if (activeTabId == tabId) { canBack = view?.canGoBack() == true; canForward = view?.canGoForward() == true; loading = false }
+                    if (url != "about:blank") persistWebViewState(tabId, view)
                 }
             }
         }
@@ -317,7 +336,19 @@ private fun FerBrowsApp() {
     val webView = remember(activeTabId) {
         webViews[activeTabId] ?: createWebView(activeTabId, tabs.firstOrNull { it.id == activeTabId }?.isPrivate == true).also { created ->
             webViews[activeTabId] = created
-            tabs.firstOrNull { it.id == activeTabId }?.url?.takeIf { it.isNotBlank() }?.let { created.loadUrl(it) }
+            val isPrivateTab = tabs.firstOrNull { it.id == activeTabId }?.isPrivate == true
+            val savedState = if (isPrivateTab) null else store.loadWebViewState(activeTabId)
+            val restored = if (savedState.isNullOrBlank()) false else runCatching {
+                val bytes = Base64.decode(savedState, Base64.NO_WRAP)
+                val parcel = Parcel.obtain()
+                try {
+                    parcel.unmarshall(bytes, 0, bytes.size)
+                    parcel.setDataPosition(0)
+                    val bundle = Bundle.CREATOR.createFromParcel(parcel)
+                    created.restoreState(bundle) != null
+                } finally { parcel.recycle() }
+            }.getOrDefault(false)
+            if (!restored) tabs.firstOrNull { it.id == activeTabId }?.url?.takeIf { it.isNotBlank() }?.let { created.loadUrl(it) }
         }
     }
     DisposableEffect(Unit) {
@@ -359,6 +390,7 @@ private fun FerBrowsApp() {
         val oldState = BrowserTabsState(tabs.toList(), activeTabId, nextTabId)
         if (oldState.tabs.none { it.id == tab.id }) return
         val next = BrowserTabReducer.close(oldState, tab.id)
+        store.clearWebViewState(tab.id)
         webViews.remove(tab.id)?.let { view ->
             (view.parent as? ViewGroup)?.removeView(view)
             view.stopLoading()
