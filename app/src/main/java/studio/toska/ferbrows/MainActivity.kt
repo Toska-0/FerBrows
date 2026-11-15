@@ -55,6 +55,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MoreVert
@@ -79,6 +82,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -103,7 +107,6 @@ private val Green = Color(0xFF4ADE80)
 private val Muted = Color(0xFF91A38F)
 private val White = Color(0xFFEAF2E7)
 
-data class BrowserTab(val id: Int, val title: String, val url: String)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,22 +132,23 @@ private fun FerBrowsApp() {
     var menuDialog by remember { mutableStateOf(false) }
     var showBookmarks by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
-    var activeTabId by remember { mutableIntStateOf(1) }
-    var nextTabId by remember { mutableIntStateOf(2) }
-    val tabs = remember { mutableStateListOf(BrowserTab(1, "Новая вкладка", "")) }
-    val history = remember { mutableStateListOf<String>() }
-    val bookmarks = remember { mutableStateListOf("https://www.google.com", "https://www.youtube.com", "https://github.com") }
+    val store = remember { BrowserStore(context) }
+    val restoredTabs = remember { store.loadTabs() }
+    var activeTabId by remember { mutableIntStateOf(store.loadActiveTabId().takeIf { id -> restoredTabs.any { it.id == id } } ?: restoredTabs.firstOrNull()?.id ?: 1) }
+    var nextTabId by remember { mutableIntStateOf(maxOf(store.loadNextTabId(), (restoredTabs.maxOfOrNull { it.id } ?: 0) + 1)) }
+    val tabs = remember { mutableStateListOf<BrowserTab>().apply { addAll(restoredTabs.ifEmpty { listOf(BrowserTab(1, "Новая вкладка", "")) }) } }
+    val history = remember { mutableStateListOf<HistoryEntry>().apply { addAll(store.loadHistory().take(100)) } }
+    val bookmarks = remember { mutableStateListOf<String>().apply { addAll(store.loadBookmarks()) } }
     val webViews = remember { mutableStateMapOf<Int, WebView>() }
-    val preferences = remember { context.getSharedPreferences("ferbrows_state", Context.MODE_PRIVATE) }
+    var pageError by remember { mutableStateOf<String?>(null) }
     val pendingFileCallback = remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         pendingFileCallback.value?.onReceiveValue(uri?.let { arrayOf(it) })
         pendingFileCallback.value = null
     }
-    val savedBookmarks = remember { preferences.getStringSet("bookmarks", null) }
-    val savedHistory = remember { preferences.getString("history", null) }
-    if (savedBookmarks != null && bookmarks.size == 3) { bookmarks.clear(); bookmarks.addAll(savedBookmarks.toList()) }
-    if (savedHistory != null && history.isEmpty()) history.addAll(savedHistory.split("\\n").filter { it.isNotBlank() }.take(100))
+    fun persistTabs() = store.saveTabs(tabs.toList(), activeTabId, nextTabId)
+    fun persistBookmarks() = store.saveBookmarks(bookmarks.toList())
+    fun persistHistory() = store.saveHistory(history.toList())
 
     fun updateTab(url: String, title: String) {
         currentUrl = url
@@ -152,6 +156,7 @@ private fun FerBrowsApp() {
         pageTitle = title.ifBlank { "Новая вкладка" }
         val index = tabs.indexOfFirst { it.id == activeTabId }
         if (index >= 0) tabs[index] = tabs[index].copy(title = pageTitle, url = url)
+        persistTabs()
     }
 
     fun createWebView(tabId: Int): WebView {
@@ -162,11 +167,16 @@ private fun FerBrowsApp() {
             )
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
+            settings.allowFileAccess = false
+            settings.allowContentAccess = true
+            settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            settings.javaScriptCanOpenWindowsAutomatically = false
             settings.loadsImagesAutomatically = true
             settings.useWideViewPort = true
             settings.loadWithOverviewMode = true
             settings.javaScriptCanOpenWindowsAutomatically = false
             settings.setSupportMultipleWindows(false)
+            android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) settings.safeBrowsingEnabled = true
             setBackgroundColor(android.graphics.Color.rgb(5, 7, 5))
             setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
@@ -231,6 +241,19 @@ private fun FerBrowsApp() {
                     }
                 }
 
+                override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: android.webkit.WebResourceError?) {
+                    if (request?.isForMainFrame == true && activeTabId == tabId) {
+                        pageError = "Не удалось открыть страницу. Проверь подключение и адрес."
+                        loading = false
+                    }
+                }
+
+                override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: android.webkit.WebResourceResponse?) {
+                    if (request?.isForMainFrame == true && activeTabId == tabId && (errorResponse?.statusCode ?: 200) >= 400) {
+                        pageError = "Ошибка сервера: HTTP ${errorResponse?.statusCode}"
+                    }
+                }
+
                 override fun onPageFinished(view: WebView?, url: String?) {
                     if (url == "about:blank") {
                         val index = tabs.indexOfFirst { it.id == tabId }
@@ -240,11 +263,12 @@ private fun FerBrowsApp() {
                         val title = view?.title?.takeIf { it.isNotBlank() } ?: url
                         val index = tabs.indexOfFirst { it.id == tabId }
                         if (index >= 0) tabs[index] = tabs[index].copy(title = title, url = url)
-                        if (url !in history) {
-                            history.add(0, url); while (history.size > 100) history.removeAt(history.lastIndex)
-                            preferences.edit().putString("history", history.joinToString("\\n")).apply()
-                        }
-                        if (activeTabId == tabId) { currentUrl = url; address = url; pageTitle = title }
+                        val existingHistoryIndex = history.indexOfFirst { it.url == url }
+                        if (existingHistoryIndex >= 0) history.removeAt(existingHistoryIndex)
+                        history.add(0, HistoryEntry(url, title, System.currentTimeMillis()))
+                        while (history.size > 100) history.removeAt(history.lastIndex)
+                        persistHistory()
+                        if (activeTabId == tabId) { currentUrl = url; address = url; pageTitle = title; pageError = null }
                     }
                     if (activeTabId == tabId) { canBack = view?.canGoBack() == true; canForward = view?.canGoForward() == true; loading = false }
                 }
@@ -261,15 +285,37 @@ private fun FerBrowsApp() {
     DisposableEffect(Unit) {
         onDispose { webViews.values.toList().forEach { it.stopLoading(); it.destroy() }; webViews.clear() }
     }
-    fun persistBookmarks() { preferences.edit().putStringSet("bookmarks", bookmarks.toSet()).apply() }
     fun switchTo(tab: BrowserTab) {
         activeTabId = tab.id
+        persistTabs()
         updateTab(tab.url, tab.title)
         val selected = webViews[tab.id]
         canBack = selected?.canGoBack() == true
         canForward = selected?.canGoForward() == true
         loading = false
         progress = 0
+        pageError = null
+    }
+    fun closeTab(tab: BrowserTab) {
+        val index = tabs.indexOfFirst { it.id == tab.id }
+        if (index < 0) return
+        val wasActive = activeTabId == tab.id
+        val oldIndex = index
+        val removed = tabs.removeAt(index)
+        webViews.remove(removed.id)?.let { it.stopLoading(); it.destroy() }
+        if (tabs.isEmpty()) {
+            val fresh = BrowserTab(nextTabId++, "Новая вкладка", "")
+            tabs.add(fresh)
+            activeTabId = fresh.id
+        } else if (wasActive) {
+            activeTabId = tabs.getOrNull((oldIndex - 1).coerceAtLeast(0))?.id ?: tabs.first().id
+        }
+        persistTabs()
+        val selected = tabs.first { it.id == activeTabId }
+        updateTab(selected.url, selected.title)
+        canBack = webViews[selected.id]?.canGoBack() == true
+        canForward = webViews[selected.id]?.canGoForward() == true
+        loading = false; progress = 0; pageError = null
     }
     BackHandler(enabled = tabDialog || menuDialog || showBookmarks || showHistory || webView.canGoBack() || tabs.size > 1) {
         when {
@@ -279,9 +325,7 @@ private fun FerBrowsApp() {
             showHistory -> showHistory = false
             webView.canGoBack() -> webView.goBack()
             tabs.size > 1 -> {
-                val index = tabs.indexOfFirst { it.id == activeTabId }.coerceAtLeast(0)
-                val removed = tabs.removeAt(index); webViews.remove(removed.id)?.destroy()
-                val replacement = tabs.first(); activeTabId = replacement.id; updateTab(replacement.url, replacement.title)
+                closeTab(tabs.first { it.id == activeTabId })
             }
             else -> { currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; webView.loadUrl("about:blank") }
         }
@@ -290,15 +334,17 @@ private fun FerBrowsApp() {
     fun navigate(raw: String) {
         val input = raw.trim()
         if (input.isEmpty()) return
-        val target = when {
-            input.startsWith("https://") || input.startsWith("http://") -> input
-            input.contains(".") && !input.contains(" ") -> "https://$input"
-            else -> "https://www.google.com/search?q=" + URLEncoder.encode(input, "UTF-8")
+        val target = BrowserNavigation.resolveInput(input)
+        if (target == null) {
+            pageError = "Некорректный адрес или неподдерживаемая схема. Используй HTTP(S) или поисковый запрос."
+            return
         }
+        pageError = null
         address = target
         currentUrl = target
         val index = tabs.indexOfFirst { it.id == activeTabId }
         if (index >= 0) tabs[index] = tabs[index].copy(url = target, title = "Загрузка…")
+        persistTabs()
         webView.loadUrl(target)
     }
 
@@ -314,6 +360,7 @@ private fun FerBrowsApp() {
                         val id = nextTabId++
                         tabs.add(BrowserTab(id, "Новая вкладка", ""))
                         activeTabId = id
+                        persistTabs()
                         currentUrl = ""
                         address = ""
                         pageTitle = "Новая вкладка"
@@ -329,24 +376,7 @@ private fun FerBrowsApp() {
                     onSelect = { tab ->
                         switchTo(tab)
                     },
-                    onClose = { tab ->
-                        if (tabs.size > 1) {
-                            val oldIndex = tabs.indexOfFirst { it.id == tab.id }
-                            tabs.remove(tab)
-                            if (activeTabId == tab.id) {
-                                val replacement = tabs.getOrNull((oldIndex - 1).coerceAtLeast(0)) ?: tabs.first()
-                                activeTabId = replacement.id
-                                updateTab(replacement.url, replacement.title)
-                                if (replacement.url.isNotBlank()) webView.loadUrl(replacement.url) else webView.loadUrl("about:blank")
-                            }
-                        } else {
-                            tabs[0] = BrowserTab(tab.id, "Новая вкладка", "")
-                            activeTabId = tab.id
-                            currentUrl = ""
-                            address = ""
-                            webView.loadUrl("about:blank")
-                        }
-                    }
+                    onClose = { tab -> closeTab(tab) }
                 )
 
                 AddressBar(
@@ -359,18 +389,27 @@ private fun FerBrowsApp() {
                         if (currentUrl.isNotBlank()) webView.reload()
                     },
                     onBookmark = {
-                        if (currentUrl.isNotBlank() && currentUrl !in bookmarks) { bookmarks.add(currentUrl); persistBookmarks() }
+                        if (currentUrl.startsWith("https://") || currentUrl.startsWith("http://")) {
+                            if (currentUrl !in bookmarks) { bookmarks.add(currentUrl); persistBookmarks() }
+                        }
                     }
                 )
 
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    AndroidView(
-                        factory = { webView },
-                        modifier = Modifier.fillMaxSize().alpha(if (currentUrl.isBlank()) 0f else 1f)
-                    )
+                    key(activeTabId) {
+                        AndroidView(
+                            factory = { webView },
+                            modifier = Modifier.fillMaxSize().alpha(if (currentUrl.isBlank()) 0f else 1f)
+                        )
+                    }
                     Column(modifier = Modifier.fillMaxSize()) {
                         AnimatedVisibility(visible = currentUrl.isBlank(), modifier = Modifier.fillMaxSize()) {
                             HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks)
+                        }
+                        if (pageError != null && currentUrl.isNotBlank()) {
+                            Surface(color = Panel, modifier = Modifier.align(Alignment.BottomCenter).padding(12.dp), shape = RoundedCornerShape(14.dp)) {
+                                Text(pageError ?: "", color = White, fontSize = 12.sp, modifier = Modifier.padding(14.dp))
+                            }
                         }
                     }
                 }
@@ -381,10 +420,11 @@ private fun FerBrowsApp() {
                     onBack = { if (webView.canGoBack()) webView.goBack() },
                     onForward = { if (webView.canGoForward()) webView.goForward() },
                     onHome = {
-                        currentUrl = ""; address = ""; pageTitle = "Новая вкладка"
+                        currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; pageError = null
                         webView.loadUrl("about:blank")
                         val i = tabs.indexOfFirst { it.id == activeTabId }
                         if (i >= 0) tabs[i] = tabs[i].copy(title = "Новая вкладка", url = "")
+                        persistTabs()
                     },
                     onTabs = { tabDialog = true },
                     tabCount = tabs.size
@@ -417,14 +457,9 @@ private fun FerBrowsApp() {
                             Text(tab.title, color = White, modifier = Modifier.weight(1f).padding(start = 10.dp), maxLines = 1)
                             IconButton(onClick = {
                                 if (tabs.size > 1) {
-                                    tabs.remove(tab); webViews.remove(tab.id)?.destroy()
-                                    if (activeTabId == tab.id) {
-                                        val replacement = tabs.first(); activeTabId = replacement.id
-                                        updateTab(replacement.url, replacement.title)
-                                    }
+                                    closeTab(tab)
                                 } else {
-                                    tabs[0] = BrowserTab(tab.id, "Новая вкладка", "")
-                                    currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; webView.loadUrl("about:blank")
+                                    closeTab(tab)
                                 }
                             }) { Icon(Icons.Filled.Close, "Закрыть", tint = Muted) }
                         }
@@ -436,6 +471,7 @@ private fun FerBrowsApp() {
                     val id = nextTabId++
                     tabs.add(BrowserTab(id, "Новая вкладка", ""))
                     activeTabId = id
+                    persistTabs()
                     currentUrl = ""
                     address = ""
                     pageTitle = "Новая вкладка"
@@ -476,14 +512,24 @@ private fun FerBrowsApp() {
             items = bookmarks,
             emptyText = "Пока нет закладок",
             onDismiss = { showBookmarks = false },
-            onSelect = { url -> showBookmarks = false; navigate(url) }
+            onSelect = { url -> showBookmarks = false; navigate(url) },
+            onRemove = { url -> bookmarks.remove(url); persistBookmarks() },
+            onMoveUp = { url ->
+                val i = bookmarks.indexOf(url)
+                if (i > 0) { val item = bookmarks.removeAt(i); bookmarks.add(i - 1, item); persistBookmarks() }
+            },
+            onMoveDown = { url ->
+                val i = bookmarks.indexOf(url)
+                if (i >= 0 && i < bookmarks.lastIndex) { val item = bookmarks.removeAt(i); bookmarks.add(i + 1, item); persistBookmarks() }
+            }
         )
     }
 
     if (showHistory) {
         SimpleListDialog(
             title = "История",
-            items = history,
+            items = history.map { it.url },
+            labels = history.associate { it.url to it.title },
             emptyText = "История пока пуста",
             onDismiss = { showHistory = false },
             onSelect = { url -> showHistory = false; navigate(url) }
@@ -551,7 +597,8 @@ private fun AddressBar(
                 .background(Panel).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Filled.Shield, null, tint = Green, modifier = Modifier.size(18.dp))
+            val secure = value.startsWith("https://", ignoreCase = true)
+            Icon(Icons.Filled.Shield, null, tint = if (secure) Green else if (value.startsWith("http://", true)) Color(0xFFFFB454) else Muted, modifier = Modifier.size(18.dp))
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
@@ -738,7 +785,11 @@ private fun SimpleListDialog(
     items: List<String>,
     emptyText: String,
     onDismiss: () -> Unit,
-    onSelect: (String) -> Unit
+    onSelect: (String) -> Unit,
+    labels: Map<String, String> = emptyMap(),
+    onRemove: ((String) -> Unit)? = null,
+    onMoveUp: ((String) -> Unit)? = null,
+    onMoveDown: ((String) -> Unit)? = null
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -750,9 +801,22 @@ private fun SimpleListDialog(
                 verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 if (items.isEmpty()) Text(emptyText, color = Muted)
-                items.take(30).forEach { item ->
-                    Text(item, color = White, fontSize = 12.sp, maxLines = 1,
-                        modifier = Modifier.fillMaxWidth().clickable { onSelect(item) }.padding(vertical = 7.dp))
+                items.take(100).forEachIndexed { index, item ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f).clickable { onSelect(item) }.padding(vertical = 7.dp)) {
+                            Text(labels[item] ?: item, color = White, fontSize = 12.sp, maxLines = 1)
+                            if (labels[item] != null) Text(item, color = Muted, fontSize = 9.sp, maxLines = 1)
+                        }
+                        if (onMoveUp != null && index > 0) IconButton(onClick = { onMoveUp(item) }, modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Filled.KeyboardArrowUp, "Выше", tint = Muted)
+                        }
+                        if (onMoveDown != null && index < items.lastIndex) IconButton(onClick = { onMoveDown(item) }, modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Filled.KeyboardArrowDown, "Ниже", tint = Muted)
+                        }
+                        if (onRemove != null) IconButton(onClick = { onRemove(item) }, modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Filled.Delete, "Удалить", tint = Muted)
+                        }
+                    }
                 }
             }
         },
