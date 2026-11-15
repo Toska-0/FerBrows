@@ -42,22 +42,22 @@ fun BrowserSettingsDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
-        Surface(Modifier.fillMaxSize(), color = Background) {
+        Surface(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), color = Background) {
             Column(Modifier.fillMaxSize()) {
                 Row(
-                    Modifier.fillMaxWidth().padding(start = 8.dp, end = 18.dp, top = 12.dp, bottom = 14.dp),
+                    Modifier.fillMaxWidth().padding(start = 8.dp, end = 18.dp, top = 5.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onDismiss) { Icon(Icons.Filled.ArrowBack, "Назад", tint = White) }
                     Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                        Text("Настройки", color = White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                        Text("Настройки", color = White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                         Text("Настрой FerBrows под себя", color = Muted, fontSize = 12.sp)
                     }
                     Icon(Icons.Filled.Settings, null, tint = Lime, modifier = Modifier.size(22.dp))
                 }
                 Column(
                     Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     SettingsGroup("ОСНОВНЫЕ", Icons.Filled.Language) {
                         SettingsAction("Поисковая система", draft.searchEngine.label, "Поиск из адресной строки", onClick = {
@@ -115,7 +115,7 @@ fun BrowserSettingsDialog(
                 }
                 Surface(color = Panel, shadowElevation = 8.dp) {
                     Row(
-                        Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 18.dp, vertical = 12.dp),
+                        Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 9.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp)) {
