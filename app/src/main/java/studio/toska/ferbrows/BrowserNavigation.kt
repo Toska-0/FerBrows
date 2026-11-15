@@ -2,6 +2,7 @@ package studio.toska.ferbrows
 
 import java.net.URLEncoder
 import java.util.Locale
+import java.net.URI
 
 object BrowserNavigation {
     fun resolveInput(raw: String): String? {
@@ -22,10 +23,10 @@ object BrowserNavigation {
     }
 
     private fun normalizeWebUrl(value: String): String? = runCatching {
-        val uri = android.net.Uri.parse(value.trim())
+        val uri = URI(value.trim())
         val scheme = uri.scheme?.lowercase(Locale.ROOT)
         val host = uri.host
         if ((scheme != "http" && scheme != "https") || host.isNullOrBlank()) null
-        else uri.buildUpon().scheme(scheme).build().toString()
+        else URI(scheme, uri.userInfo, host, uri.port, uri.rawPath, uri.rawQuery, uri.rawFragment).toASCIIString()
     }.getOrNull()
 }
