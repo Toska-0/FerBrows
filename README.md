@@ -10,12 +10,12 @@ FerBrows is an Android browser prototype with a dark AMOLED interface and lime a
 - Search provider selection: Google, DuckDuckGo or Bing.
 - Editable/reorderable/removable bookmarks.
 - Browsing history with title, visit time, search and clear controls.
-- Android DownloadManager integration and website file chooser.
-- Main-frame navigation errors shown in the browser.
+- Download list with live progress, open and remove actions, backed by Android DownloadManager; website file chooser.
+- Main-frame navigation errors and a validated offline-network warning shown in the browser.
 - Private tabs backed by AndroidX WebKit multi-profile when supported.
 - Optional blocking of a small built-in list of known advertising and analytics hosts.
 - Safe Browsing where supported by the installed WebView provider.
-- JavaScript, homepage, search provider and reduced-motion settings.
+- JavaScript, homepage, search provider, tracker protection and reduced-motion settings. Site camera/microphone and geolocation requests are denied by default.
 - Controls to clear history, WebView cache, cookies and website storage.
 
 ## Private browsing
@@ -55,7 +55,7 @@ The debug APK is created at `app/build/outputs/apk/debug/app-debug.apk`. Release
 
 ## Continuous integration
 
-GitHub Actions runs unit tests and builds the debug APK on pushes and pull requests to `main`. It also supports manual runs. Download the `FerBrows-debug-apk` artifact from a successful workflow run.
+GitHub Actions runs unit tests and builds the debug APK on pushes and pull requests to `main`. It also supports manual runs. Download the `FerBrows-android-apks` artifact from a successful workflow run.
 
 ## Known gaps before a public release
 
