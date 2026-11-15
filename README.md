@@ -36,6 +36,7 @@ JavaScript is enabled by default for website compatibility and can be disabled i
 - `BrowserScreens.kt`: Compose browser interface.
 - `BrowserStore.kt`: persisted tabs, bookmarks and history.
 - `BrowserSettings.kt` / `BrowserSettingsDialog.kt`: browser preferences and settings UI.
+- `WelcomeDialog.kt`: first-run introduction.
 - `BrowserDownloadsStore.kt` / `DownloadsDialog.kt`: tracked downloads and file actions.
 - `BookmarkEditDialog.kt`: bookmark editing.
 - `BrowserNavigation.kt`: URL/search input validation.
@@ -52,7 +53,7 @@ gradle --no-daemon assembleDebug
 gradle --no-daemon assembleRelease
 ```
 
-The debug APK is created at `app/build/outputs/apk/debug/app-debug.apk`. Release builds are not yet signed by the repository workflow; configure a protected signing key before distributing a release APK.
+The debug APK is created at `app/build/outputs/apk/debug/app-debug.apk`. Release signing is enabled when the repository has the protected secrets `FERBROWS_KEYSTORE_BASE64`, `FERBROWS_KEYSTORE_PASSWORD`, `FERBROWS_KEY_ALIAS` and `FERBROWS_KEY_PASSWORD`; without them CI produces an unsigned release APK.
 
 ## Continuous integration
 
@@ -63,7 +64,7 @@ GitHub Actions runs unit tests and builds debug and release APK variants on push
 - Per-site permission controls (camera, microphone and geolocation are currently denied by default).
 - Device-level UI/instrumentation tests and a broader Android/device/network test matrix.
 - A full architecture split of the browser orchestration currently in `MainActivity.kt`.
-- Production release signing, store listing assets and a first-run onboarding flow.
+- Production signing secrets and store listing screenshots/metadata.
 - Tracker filter maintenance and a review of WebView/provider privacy behavior.
 
 ## Engine note
