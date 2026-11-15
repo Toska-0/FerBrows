@@ -5,7 +5,7 @@ import java.util.Locale
 import java.net.URI
 
 object BrowserNavigation {
-    fun resolveInput(raw: String): String? {
+    fun resolveInput(raw: String, searchEngine: SearchEngine = SearchEngine.GOOGLE): String? {
         val input = raw.trim()
         if (input.isEmpty()) return null
         if (input.any { it == '\n' || it == '\r' }) return null
@@ -19,7 +19,7 @@ object BrowserNavigation {
 
         val looksLikeHost = input.contains('.') && !input.contains(' ') && !input.startsWith('.') && !input.endsWith('.')
         return if (looksLikeHost) normalizeWebUrl("https://$input")
-        else "https://www.google.com/search?q=" + URLEncoder.encode(input, "UTF-8")
+        else searchEngine.template.replace("%s", URLEncoder.encode(input, "UTF-8"))
     }
 
     private fun normalizeWebUrl(value: String): String? = runCatching {
