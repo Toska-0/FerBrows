@@ -28,6 +28,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -476,7 +480,8 @@ private fun FerBrowsApp() {
                     onSelect = { tab ->
                         switchTo(tab)
                     },
-                    onClose = { tab -> closeTab(tab) }
+                    onClose = { tab -> closeTab(tab) },
+                    reducedMotion = browserSettings.reducedMotion
                 )
 
                 AddressBar(
@@ -497,7 +502,8 @@ private fun FerBrowsApp() {
                         } else if (currentUrl.startsWith("https://") || currentUrl.startsWith("http://")) {
                             if (currentUrl !in bookmarks) { bookmarks.add(currentUrl); persistBookmarks() }
                         }
-                    }
+                    },
+                    reducedMotion = browserSettings.reducedMotion
                 )
 
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -508,7 +514,12 @@ private fun FerBrowsApp() {
                         )
                     }
                     Column(modifier = Modifier.fillMaxSize()) {
-                        AnimatedVisibility(visible = currentUrl.isBlank(), modifier = Modifier.fillMaxSize()) {
+                        AnimatedVisibility(
+                            visible = currentUrl.isBlank(),
+                            modifier = Modifier.fillMaxSize(),
+                            enter = if (browserSettings.reducedMotion) EnterTransition.None else fadeIn(),
+                            exit = if (browserSettings.reducedMotion) ExitTransition.None else fadeOut()
+                        ) {
                             HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks)
                         }
                     }
