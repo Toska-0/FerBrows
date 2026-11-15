@@ -2,6 +2,11 @@ package studio.toska.ferbrows
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -55,9 +60,9 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit) {
 }
 
 @Composable
-fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Unit, onClose: (BrowserTab) -> Unit) {
+fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Unit, onClose: (BrowserTab) -> Unit, reducedMotion: Boolean = false) {
     Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp),
+        modifier = Modifier.fillMaxWidth().then(if (reducedMotion) Modifier else Modifier.animateContentSize()).horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         tabs.forEach { tab ->
@@ -90,7 +95,8 @@ fun AddressBar(
     onValueChange: (String) -> Unit,
     onGo: () -> Unit,
     onRefresh: () -> Unit,
-    onBookmark: () -> Unit
+    onBookmark: () -> Unit,
+    reducedMotion: Boolean = false
 ) {
     Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
         Row(
@@ -121,7 +127,11 @@ fun AddressBar(
                 Icon(Icons.Filled.Refresh, "Обновить", tint = White, modifier = Modifier.size(19.dp))
             }
         }
-        AnimatedVisibility(visible = loading) {
+        AnimatedVisibility(
+            visible = loading,
+            enter = if (reducedMotion) EnterTransition.None else fadeIn(),
+            exit = if (reducedMotion) ExitTransition.None else fadeOut()
+        ) {
             LinearProgressIndicator(
                 progress = progress.coerceIn(0, 100) / 100f,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(2.dp).clip(CircleShape),
