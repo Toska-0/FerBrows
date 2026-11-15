@@ -8,6 +8,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -41,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit) {
+fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, networkOnline: Boolean = true) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 10.dp, top = 12.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -53,6 +54,13 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit) {
             Text("FerBrows", color = White, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
             Text("FAST · SIMPLE · YOURS", color = Muted, fontSize = 8.sp, letterSpacing = 1.5.sp)
         }
+        Box(
+            Modifier.clip(RoundedCornerShape(20.dp)).background(if (networkOnline) Green.copy(alpha = 0.10f) else Color(0xFFFFB454).copy(alpha = 0.12f))
+                .padding(horizontal = 8.dp, vertical = 5.dp)
+        ) {
+            Text(if (networkOnline) "ONLINE" else "ОФЛАЙН", color = if (networkOnline) Green else Color(0xFFFFB454), fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
+        }
+        Spacer(Modifier.width(4.dp))
         IconButton(onClick = onNewTab) { Icon(Icons.Filled.Add, "Новая вкладка", tint = Lime) }
         IconButton(onClick = onTabs) { Icon(Icons.Filled.Tab, "Вкладки", tint = White) }
         IconButton(onClick = onMenu) { Icon(Icons.Filled.MoreVert, "Меню", tint = White) }
@@ -70,6 +78,7 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
             Row(
                 modifier = Modifier.width(150.dp).clip(RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
                     .background(if (active) PanelSoft else Color(0xFF0A0E0A))
+                    .border(1.dp, if (active) Lime.copy(alpha = 0.42f) else Color(0xFF1B241B), RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
                     .clickable { onSelect(tab) }.padding(start = 11.dp, end = 5.dp, top = 9.dp, bottom = 9.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -101,7 +110,7 @@ fun AddressBar(
     Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(17.dp))
-                .background(Panel).padding(horizontal = 12.dp),
+                .background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(17.dp)).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Filled.Shield, if (isSecure) "Защищённое соединение HTTPS" else if (isInsecure) "Незащищённое соединение HTTP" else "Статус соединения", tint = if (isSecure) Green else if (isInsecure) Color(0xFFFFB454) else Muted, modifier = Modifier.size(18.dp))
@@ -158,18 +167,16 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
         horizontalAlignment = Alignment.Start
     ) {
         item {
-            Spacer(Modifier.height(30.dp))
-            Box(Modifier.size(54.dp).clip(RoundedCornerShape(18.dp)).background(Lime), contentAlignment = Alignment.Center) {
-                Text("F", color = Background, fontSize = 34.sp, fontWeight = FontWeight.Black)
-            }
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(24.dp))
+            Text("ТВОЁ ПРОСТРАНСТВО В СЕТИ", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+            Spacer(Modifier.height(10.dp))
             Text("Твой интернет.", color = White, fontSize = 30.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
             Text("Без лишнего шума.", color = Lime, fontSize = 30.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
-            Spacer(Modifier.height(10.dp))
-            Text("Быстрый доступ к тому, что важно.", color = Muted, fontSize = 13.sp)
-            Spacer(Modifier.height(26.dp))
+            Spacer(Modifier.height(8.dp))
+            Text("Всё важное — в одном месте.", color = Muted, fontSize = 13.sp)
+            Spacer(Modifier.height(22.dp))
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(18.dp)).padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Filled.Search, null, tint = Lime)
@@ -200,7 +207,7 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
             val site = sites[index]
             Row(
                 Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp))
-                    .background(Panel).clickable { onOpen(site.third) }.padding(15.dp),
+                    .background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(16.dp)).clickable { onOpen(site.third) }.padding(15.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(PanelSoft), contentAlignment = Alignment.Center) {
@@ -254,7 +261,7 @@ fun BottomToolbar(
     tabCount: Int
 ) {
     Row(
-        Modifier.fillMaxWidth().background(Color(0xFF0B100B)).padding(horizontal = 22.dp, vertical = 7.dp),
+        Modifier.fillMaxWidth().background(Color(0xFF0B100B)).border(1.dp, PanelSoft).padding(horizontal = 22.dp, vertical = 7.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
