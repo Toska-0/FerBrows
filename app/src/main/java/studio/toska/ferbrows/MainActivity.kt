@@ -788,7 +788,7 @@ private fun FerBrowsApp() {
         )
     }
 }
-\n
+
 private fun hasValidatedInternet(context: Context): Boolean {
     val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     val network = manager.activeNetwork ?: return false
