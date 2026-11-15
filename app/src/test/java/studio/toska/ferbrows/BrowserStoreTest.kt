@@ -6,8 +6,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
+@RunWith(RobolectricTestRunner::class)
 class BrowserStoreTest {
     private lateinit var context: Context
     private lateinit var store: BrowserStore
