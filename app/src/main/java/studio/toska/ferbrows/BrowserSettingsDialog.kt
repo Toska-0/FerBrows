@@ -65,6 +65,8 @@ fun BrowserSettingsDialog(
                 SettingSwitch("Блокировка известных трекеров", "Небольшой встроенный список доменов, не полная защита", draft.trackerProtectionEnabled) {
                     draft = draft.copy(trackerProtectionEnabled = it)
                 }
+                Text("Разрешения сайтов", color = White)
+                Text("Камера, микрофон и геолокация пока запрещены по умолчанию. Управление разрешениями для отдельных сайтов ещё не реализовано.", color = Muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                 SettingSwitch("Уменьшить анимации", "Сокращает декоративные переходы интерфейса", draft.reducedMotion) {
                     draft = draft.copy(reducedMotion = it)
                 }
