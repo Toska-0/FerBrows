@@ -284,8 +284,10 @@ private fun FerBrowsApp() {
                         factory = { webView },
                         modifier = Modifier.fillMaxSize().alpha(if (currentUrl.isBlank()) 0f else 1f)
                     )
-                    AnimatedVisibility(visible = currentUrl.isBlank(), modifier = Modifier.fillMaxSize()) {
-                        HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks)
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        AnimatedVisibility(visible = currentUrl.isBlank(), modifier = Modifier.fillMaxSize()) {
+                            HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks)
+                        }
                     }
                 }
 
