@@ -28,7 +28,11 @@ class BrowserStore(context: Context) {
     fun loadNextTabId(): Int = prefs.getInt("next_tab_id", 2)
 
     fun loadBookmarks(): List<String> = runCatching {
-        val raw = prefs.getString("bookmarks_v2", null) ?: return listOf("https://www.google.com", "https://www.youtube.com", "https://github.com")
+        val raw = prefs.getString("bookmarks_v2", null)
+        if (raw == null) {
+            val legacy = prefs.getStringSet("bookmarks", null)?.toList()
+            return legacy?.sorted() ?: listOf("https://www.google.com", "https://www.youtube.com", "https://github.com")
+        }
         val array = JSONArray(raw)
         (0 until array.length()).map { array.optString(it) }.filter { it.startsWith("http://") || it.startsWith("https://") }
     }.getOrDefault(listOf("https://www.google.com", "https://www.youtube.com", "https://github.com"))
@@ -40,7 +44,12 @@ class BrowserStore(context: Context) {
     }
 
     fun loadHistory(): List<HistoryEntry> = runCatching {
-        val array = JSONArray(prefs.getString("history_v2", "[]"))
+        val raw = prefs.getString("history_v2", null)
+        if (raw == null) {
+            return prefs.getString("history", null)?.split("\\n")?.filter { it.startsWith("http") }
+                ?.distinct()?.take(100)?.map { HistoryEntry(it, it, 0L) } ?: emptyList()
+        }
+        val array = JSONArray(raw)
         (0 until array.length()).mapNotNull { i ->
             array.optJSONObject(i)?.let { HistoryEntry(it.optString("url"), it.optString("title", it.optString("url")), it.optLong("visitedAt")) }
         }
