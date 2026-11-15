@@ -145,6 +145,7 @@ private fun FerBrowsApp() {
     var showHistory by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showExitConfirm by remember { mutableStateOf(false) }
+    var bookmarkEditing by remember { mutableStateOf<String?>(null) }
     val settingsStore = remember { BrowserSettingsStore(context) }
     var browserSettings by remember { mutableStateOf(settingsStore.load()) }
     val store = remember { BrowserStore(context) }
@@ -633,7 +634,8 @@ private fun FerBrowsApp() {
             onMoveDown = { url ->
                 val i = bookmarks.indexOf(url)
                 if (i >= 0 && i < bookmarks.lastIndex) { val item = bookmarks.removeAt(i); bookmarks.add(i + 1, item); persistBookmarks() }
-            }
+            },
+            onEdit = { bookmarkEditing = it }
         )
     }
 
@@ -644,10 +646,32 @@ private fun FerBrowsApp() {
             labels = history.associate { it.url to it.title },
             emptyText = "История пока пуста",
             onDismiss = { showHistory = false },
-            onSelect = { url -> showHistory = false; navigate(url) }
+            onSelect = { url -> showHistory = false; navigate(url) },
+            searchable = true
         )
     }
     
+
+    if (bookmarkEditing != null) {
+        BookmarkEditDialog(
+            initialUrl = bookmarkEditing.orEmpty(),
+            onSave = { raw ->
+                val updated = BrowserNavigation.resolveInput(raw)
+                if (updated != null && (updated.startsWith("https://") || updated.startsWith("http://"))) {
+                    val index = bookmarks.indexOf(bookmarkEditing)
+                    if (index >= 0) {
+                        bookmarks[index] = updated
+                        persistBookmarks()
+                    }
+                    bookmarkEditing = null
+                } else {
+                    Toast.makeText(context, "Укажи корректный HTTP(S)-адрес", Toast.LENGTH_SHORT).show()
+                }
+            },
+            onDismiss = { bookmarkEditing = null }
+        )
+    }
+
     if (showSettings) {
         BrowserSettingsDialog(
             settings = browserSettings,
