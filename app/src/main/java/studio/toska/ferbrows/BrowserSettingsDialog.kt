@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun BrowserSettingsDialog(
@@ -35,47 +39,82 @@ fun BrowserSettingsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Panel,
-        title = { Text("Настройки браузера", color = White) },
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text("Настройки", color = White, fontWeight = FontWeight.Bold)
+                Text("Настрой FerBrows под себя", color = Muted, fontSize = 11.sp)
+            }
+        },
         text = {
             Column(
-                modifier = Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.heightIn(max = 470.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(13.dp)
             ) {
-                Text("Поисковая система", color = Muted)
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable {
-                        val engines = SearchEngine.values()
-                        draft = draft.copy(searchEngine = engines[(engines.indexOf(draft.searchEngine) + 1) % engines.size])
-                    }.padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(draft.searchEngine.label, color = White, modifier = Modifier.weight(1f))
-                    Text("Изменить", color = Lime)
+                SettingsLabel("ОСНОВНЫЕ")
+                Surface(color = PanelSoft, shape = RoundedCornerShape(15.dp)) {
+                    Column(Modifier.padding(horizontal = 13.dp, vertical = 5.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                val engines = SearchEngine.values()
+                                draft = draft.copy(searchEngine = engines[(engines.indexOf(draft.searchEngine) + 1) % engines.size])
+                            }.padding(vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Поисковая система", color = White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text("Для запросов из адресной строки", color = Muted, fontSize = 10.sp)
+                            }
+                            Text(draft.searchEngine.label + "  ›", color = Lime, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        OutlinedTextField(
+                            value = draft.homePage,
+                            onValueChange = { draft = draft.copy(homePage = it) },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            label = { Text("Домашняя страница") },
+                            placeholder = { Text("Пусто — новая вкладка") },
+                            singleLine = true
+                        )
+                    }
                 }
-                OutlinedTextField(
-                    value = draft.homePage,
-                    onValueChange = { draft = draft.copy(homePage = it) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Домашняя страница (пусто — новая вкладка)") },
-                    singleLine = true
-                )
-                SettingSwitch("JavaScript", "Отключение может нарушить работу сайтов", draft.javaScriptEnabled) {
-                    draft = draft.copy(javaScriptEnabled = it)
+
+                SettingsLabel("ПРИВАТНОСТЬ И САЙТЫ")
+                Surface(color = PanelSoft, shape = RoundedCornerShape(15.dp)) {
+                    Column(Modifier.padding(horizontal = 13.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        SettingSwitch("JavaScript", "Нужен большинству современных сайтов", draft.javaScriptEnabled) {
+                            draft = draft.copy(javaScriptEnabled = it)
+                        }
+                        SettingSwitch("Защита от трекеров", "Блокирует известные домены из встроенного списка", draft.trackerProtectionEnabled) {
+                            draft = draft.copy(trackerProtectionEnabled = it)
+                        }
+                    }
                 }
-                SettingSwitch("Блокировка известных трекеров", "Небольшой встроенный список доменов, не полная защита", draft.trackerProtectionEnabled) {
-                    draft = draft.copy(trackerProtectionEnabled = it)
+                Surface(color = PanelSoft, shape = RoundedCornerShape(13.dp)) {
+                    Text(
+                        "Камера, микрофон и геолокация не выдаются сайтам автоматически. Настройка разрешений пока недоступна.",
+                        color = Muted,
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(12.dp)
+                    )
                 }
-                Text("Разрешения сайтов", color = White)
-                Text("Камера, микрофон и геолокация пока запрещены по умолчанию. Управление разрешениями для отдельных сайтов ещё не реализовано.", color = Muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
-                SettingSwitch("Уменьшить анимации", "Сокращает декоративные переходы интерфейса", draft.reducedMotion) {
-                    draft = draft.copy(reducedMotion = it)
+
+                SettingsLabel("ВНЕШНИЙ ВИД")
+                Surface(color = PanelSoft, shape = RoundedCornerShape(15.dp)) {
+                    SettingSwitch("Меньше анимаций", "Сократить декоративные переходы", draft.reducedMotion) {
+                        draft = draft.copy(reducedMotion = it)
+                    }
                 }
-                TextButton(onClick = onClearHistory) { Text("Очистить историю", color = Lime) }
-                TextButton(onClick = onClearSiteData) { Text("Очистить кэш и данные сайтов", color = Lime) }
+
+                SettingsLabel("ДАННЫЕ")
+                Surface(color = PanelSoft, shape = RoundedCornerShape(15.dp)) {
+                    Column(Modifier.padding(horizontal = 12.dp, vertical = 3.dp)) {
+                        TextButton(onClick = onClearHistory) { Text("Очистить историю", color = Lime) }
+                        TextButton(onClick = onClearSiteData) { Text("Очистить кэш и данные сайтов", color = Lime) }
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(draft); onDismiss() }) { Text("Сохранить", color = Lime) }
+            TextButton(onClick = { onSave(draft); onDismiss() }) { Text("Сохранить", color = Lime, fontWeight = FontWeight.Bold) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Отмена", color = Muted) }
@@ -84,11 +123,19 @@ fun BrowserSettingsDialog(
 }
 
 @Composable
+private fun SettingsLabel(value: String) {
+    Text(value, color = Lime, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+}
+
+@Composable
 private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-            Text(title, color = White)
-            Text(subtitle, color = Muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 10.dp)) {
+            Text(title, color = White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            Text(subtitle, color = Muted, fontSize = 10.sp, lineHeight = 14.sp)
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
