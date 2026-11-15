@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -166,7 +167,11 @@ private fun FerBrowsApp() {
                 }
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                    if (!url.isNullOrBlank()) {
+                    if (url == "about:blank") {
+                        currentUrl = ""
+                        address = ""
+                        pageTitle = "Новая вкладка"
+                    } else if (!url.isNullOrBlank()) {
                         currentUrl = url
                         address = url
                         loading = true
@@ -174,7 +179,11 @@ private fun FerBrowsApp() {
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    if (!url.isNullOrBlank()) {
+                    if (url == "about:blank") {
+                        currentUrl = ""
+                        address = ""
+                        pageTitle = "Новая вкладка"
+                    } else if (!url.isNullOrBlank()) {
                         currentUrl = url
                         address = url
                         pageTitle = view?.title?.takeIf { it.isNotBlank() } ?: url
@@ -476,7 +485,7 @@ private fun AddressBar(
         }
         AnimatedVisibility(visible = loading) {
             LinearProgressIndicator(
-                progress = { progress.coerceIn(0, 100) / 100f },
+                progress = progress.coerceIn(0, 100) / 100f,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(2.dp).clip(CircleShape),
                 color = Lime,
                 trackColor = Panel
