@@ -429,7 +429,7 @@ private fun FerBrowsApp() {
                             HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks)
                         }
                         if (pageError != null && currentUrl.isNotBlank()) {
-                            Surface(color = Panel, modifier = Modifier.align(Alignment.BottomCenter).padding(12.dp), shape = RoundedCornerShape(14.dp)) {
+                            Surface(color = Panel, modifier = Modifier.fillMaxWidth().padding(12.dp), shape = RoundedCornerShape(14.dp)) {
                                 Text(pageError ?: "", color = White, fontSize = 12.sp, modifier = Modifier.padding(14.dp))
                             }
                         }
