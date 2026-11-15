@@ -10,6 +10,7 @@ import android.app.DownloadManager
 import android.content.Context
 import android.os.Environment
 import android.widget.Toast
+import java.io.ByteArrayInputStream
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -17,6 +18,9 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.ValueCallback
 import androidx.activity.ComponentActivity
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
+import androidx.webkit.ProfileStore
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -107,11 +111,15 @@ internal val Lime = Color(0xFFC6FF1A)
 internal val Green = Color(0xFF4ADE80)
 internal val Muted = Color(0xFF91A38F)
 internal val White = Color(0xFFEAF2E7)
+private const val PRIVATE_PROFILE_NAME = "FerBrowsPrivate"
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+            runCatching { ProfileStore.getInstance().deleteProfile(PRIVATE_PROFILE_NAME) }
+        }
         window.statusBarColor = android.graphics.Color.rgb(5, 7, 5)
         window.navigationBarColor = android.graphics.Color.rgb(5, 7, 5)
         setContent { FerBrowsApp() }
@@ -160,8 +168,11 @@ private fun FerBrowsApp() {
         persistTabs()
     }
 
-    fun createWebView(tabId: Int): WebView {
+    fun createWebView(tabId: Int, isPrivate: Boolean): WebView {
         return WebView(context).apply {
+            if (isPrivate && WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+                WebViewCompat.setProfile(this, PRIVATE_PROFILE_NAME)
+            }
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -222,6 +233,16 @@ private fun FerBrowsApp() {
                 }
             }
             webViewClient = object : WebViewClient() {
+                override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
+                    if (TrackerProtection.shouldBlock(request?.url?.host)) {
+                        return android.webkit.WebResourceResponse(
+                            "text/plain", "UTF-8", 204, "Blocked by FerBrows tracker protection",
+                            emptyMap(), ByteArrayInputStream(ByteArray(0))
+                        )
+                    }
+                    return super.shouldInterceptRequest(view, request)
+                }
+
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val uri = request?.url ?: return false
                     val scheme = uri.scheme?.lowercase() ?: return false
@@ -267,11 +288,14 @@ private fun FerBrowsApp() {
                         val index = tabs.indexOfFirst { it.id == tabId }
                         if (index >= 0) tabs[index] = tabs[index].copy(title = title, url = url)
                         persistTabs()
-                        val existingHistoryIndex = history.indexOfFirst { it.url == url }
-                        if (existingHistoryIndex >= 0) history.removeAt(existingHistoryIndex)
-                        history.add(0, HistoryEntry(url, title, System.currentTimeMillis()))
-                        while (history.size > 100) history.removeAt(history.lastIndex)
-                        persistHistory()
+                        val privatePage = tabs.firstOrNull { it.id == tabId }?.isPrivate == true
+                        if (!privatePage) {
+                            val existingHistoryIndex = history.indexOfFirst { it.url == url }
+                            if (existingHistoryIndex >= 0) history.removeAt(existingHistoryIndex)
+                            history.add(0, HistoryEntry(url, title, System.currentTimeMillis()))
+                            while (history.size > 100) history.removeAt(history.lastIndex)
+                            persistHistory()
+                        }
                         if (activeTabId == tabId) { currentUrl = url; address = url; pageTitle = title; pageError = null }
                     }
                     if (activeTabId == tabId) { canBack = view?.canGoBack() == true; canForward = view?.canGoForward() == true; loading = false }
@@ -291,16 +315,22 @@ private fun FerBrowsApp() {
     }
 
     val webView = remember(activeTabId) {
-        webViews[activeTabId] ?: createWebView(activeTabId).also { created ->
+        webViews[activeTabId] ?: createWebView(activeTabId, tabs.firstOrNull { it.id == activeTabId }?.isPrivate == true).also { created ->
             webViews[activeTabId] = created
             tabs.firstOrNull { it.id == activeTabId }?.url?.takeIf { it.isNotBlank() }?.let { created.loadUrl(it) }
         }
     }
     DisposableEffect(Unit) {
-        onDispose { webViews.values.toList().forEach { view ->
-            (view.parent as? ViewGroup)?.removeView(view)
-            view.stopLoading(); view.destroy()
-        }; webViews.clear() }
+        onDispose {
+            webViews.values.toList().forEach { view ->
+                (view.parent as? ViewGroup)?.removeView(view)
+                view.stopLoading(); view.destroy()
+            }
+            webViews.clear()
+            if (tabs.any { it.isPrivate } && WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+                runCatching { ProfileStore.getInstance().deleteProfile(PRIVATE_PROFILE_NAME) }
+            }
+        }
     }
     fun switchTo(tab: BrowserTab) {
         val state = BrowserTabReducer.select(BrowserTabsState(tabs.toList(), activeTabId, nextTabId), tab.id)
@@ -315,8 +345,8 @@ private fun FerBrowsApp() {
         pageError = null
     }
 
-    fun addTab() {
-        val next = BrowserTabReducer.add(BrowserTabsState(tabs.toList(), activeTabId, nextTabId))
+    fun addTab(isPrivate: Boolean = false) {
+        val next = BrowserTabReducer.add(BrowserTabsState(tabs.toList(), activeTabId, nextTabId), isPrivate)
         tabs.clear(); tabs.addAll(next.tabs)
         activeTabId = next.activeTabId
         nextTabId = next.nextTabId
@@ -335,6 +365,10 @@ private fun FerBrowsApp() {
             view.destroy()
         }
         tabs.clear(); tabs.addAll(next.tabs)
+        if (oldState.tabs.any { it.isPrivate } && next.tabs.none { it.isPrivate } &&
+            WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+            runCatching { ProfileStore.getInstance().deleteProfile(PRIVATE_PROFILE_NAME) }
+        }
         activeTabId = next.activeTabId
         nextTabId = next.nextTabId
         persistTabs()
@@ -343,6 +377,15 @@ private fun FerBrowsApp() {
         canBack = webViews[selected.id]?.canGoBack() == true
         canForward = webViews[selected.id]?.canGoForward() == true
         loading = false; progress = 0; pageError = null
+    }
+
+    fun addPrivateTab() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+            Toast.makeText(context, "Приватный профиль не поддерживается текущим WebView", Toast.LENGTH_LONG).show()
+            return
+        }
+        addTab(isPrivate = true)
+        Toast.makeText(context, "Приватная вкладка: данные не сохраняются в истории и списке вкладок", Toast.LENGTH_SHORT).show()
     }
 
     BackHandler(enabled = tabDialog || menuDialog || showBookmarks || showHistory || webView.canGoBack() || tabs.size > 1) {
@@ -408,7 +451,9 @@ private fun FerBrowsApp() {
                         if (currentUrl.isNotBlank()) webView.reload()
                     },
                     onBookmark = {
-                        if (currentUrl.startsWith("https://") || currentUrl.startsWith("http://")) {
+                        if (tabs.firstOrNull { it.id == activeTabId }?.isPrivate == true) {
+                            Toast.makeText(context, "В приватном режиме закладки не сохраняются", Toast.LENGTH_SHORT).show()
+                        } else if (currentUrl.startsWith("https://") || currentUrl.startsWith("http://")) {
                             if (currentUrl !in bookmarks) { bookmarks.add(currentUrl); persistBookmarks() }
                         }
                     }
@@ -511,6 +556,10 @@ private fun FerBrowsApp() {
                     }
                     MenuRow("История", "Недавно открытые страницы") {
                         showHistory = true
+                        menuDialog = false
+                    }
+                    MenuRow("Новая приватная вкладка", "Отдельный профиль без сохранения истории") {
+                        addPrivateTab()
                         menuDialog = false
                     }
                     MenuRow("О браузере", "FerBrows 0.1.0 · Chromium WebView") {
