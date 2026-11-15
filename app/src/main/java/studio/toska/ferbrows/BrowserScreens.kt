@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -288,8 +289,14 @@ fun SimpleListDialog(
     labels: Map<String, String> = emptyMap(),
     onRemove: ((String) -> Unit)? = null,
     onMoveUp: ((String) -> Unit)? = null,
-    onMoveDown: ((String) -> Unit)? = null
+    onMoveDown: ((String) -> Unit)? = null,
+    onEdit: ((String) -> Unit)? = null,
+    searchable: Boolean = false
 ) {
+    var query by remember(title) { mutableStateOf("") }
+    val visibleItems = if (searchable && query.isNotBlank()) items.filter {
+        it.contains(query, ignoreCase = true) || labels[it].orEmpty().contains(query, ignoreCase = true)
+    } else items
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Panel,
@@ -299,12 +306,24 @@ fun SimpleListDialog(
                 modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                if (items.isEmpty()) Text(emptyText, color = Muted)
-                items.take(100).forEachIndexed { index, item ->
+                if (searchable) {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Поиск по истории") }
+                    )
+                }
+                if (visibleItems.isEmpty()) Text(if (items.isEmpty()) emptyText else "Ничего не найдено", color = Muted)
+                visibleItems.take(100).forEachIndexed { index, item ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f).clickable { onSelect(item) }.padding(vertical = 7.dp)) {
                             Text(labels[item] ?: item, color = White, fontSize = 12.sp, maxLines = 1)
                             if (labels[item] != null) Text(item, color = Muted, fontSize = 9.sp, maxLines = 1)
+                        }
+                        if (onEdit != null) IconButton(onClick = { onEdit(item) }, modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Filled.Edit, "Изменить", tint = Muted)
                         }
                         if (onMoveUp != null && index > 0) IconButton(onClick = { onMoveUp(item) }, modifier = Modifier.size(30.dp)) {
                             Icon(Icons.Filled.KeyboardArrowUp, "Выше", tint = Muted)
