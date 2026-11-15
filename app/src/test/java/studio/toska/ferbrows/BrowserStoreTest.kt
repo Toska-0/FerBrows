@@ -61,7 +61,7 @@ class BrowserStoreTest {
     @Test
     fun legacyHistorySplitsOnActualNewlines() {
         context.getSharedPreferences("ferbrows_state", Context.MODE_PRIVATE)
-            .edit().putString("history", "https://one.example\\nhttps://two.example").commit()
+            .edit().putString("history", listOf("https://one.example", "https://two.example").joinToString("\n")).commit()
 
         assertEquals(
             listOf("https://one.example", "https://two.example"),
