@@ -60,10 +60,10 @@ fun BrowserSettingsDialog(
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     SettingsGroup("ОСНОВНЫЕ", Icons.Filled.Language) {
-                        SettingsAction("Поисковая система", draft.searchEngine.label, "Поиск из адресной строки") {
+                        SettingsAction("Поисковая система", draft.searchEngine.label, "Поиск из адресной строки", onClick = {
                             val engines = SearchEngine.values()
                             draft = draft.copy(searchEngine = engines[(engines.indexOf(draft.searchEngine) + 1) % engines.size])
-                        }
+                        })
                         HorizontalDivider(color = PanelSoft)
                         Column(Modifier.fillMaxWidth().padding(vertical = 13.dp)) {
                             Text("Домашняя страница", color = White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
