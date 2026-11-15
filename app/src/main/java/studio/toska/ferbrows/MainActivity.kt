@@ -303,7 +303,8 @@ private fun FerBrowsApp() {
         }; webViews.clear() }
     }
     fun switchTo(tab: BrowserTab) {
-        activeTabId = tab.id
+        val state = BrowserTabReducer.select(BrowserTabsState(tabs.toList(), activeTabId, nextTabId), tab.id)
+        activeTabId = state.activeTabId
         persistTabs()
         updateTab(tab.url, tab.title)
         val selected = webViews[tab.id]
@@ -313,25 +314,29 @@ private fun FerBrowsApp() {
         progress = 0
         pageError = null
     }
+
+    fun addTab() {
+        val next = BrowserTabReducer.add(BrowserTabsState(tabs.toList(), activeTabId, nextTabId))
+        tabs.clear(); tabs.addAll(next.tabs)
+        activeTabId = next.activeTabId
+        nextTabId = next.nextTabId
+        currentUrl = ""; address = ""; pageTitle = "Новая вкладка"
+        canBack = false; canForward = false; loading = false; progress = 0; pageError = null
+        persistTabs()
+    }
+
     fun closeTab(tab: BrowserTab) {
-        val index = tabs.indexOfFirst { it.id == tab.id }
-        if (index < 0) return
-        val wasActive = activeTabId == tab.id
-        val oldIndex = index
-        val removed = tabs.removeAt(index)
-        webViews.remove(removed.id)?.let { view ->
+        val oldState = BrowserTabsState(tabs.toList(), activeTabId, nextTabId)
+        if (oldState.tabs.none { it.id == tab.id }) return
+        val next = BrowserTabReducer.close(oldState, tab.id)
+        webViews.remove(tab.id)?.let { view ->
             (view.parent as? ViewGroup)?.removeView(view)
             view.stopLoading()
-            view.loadUrl("about:blank")
             view.destroy()
         }
-        if (tabs.isEmpty()) {
-            val fresh = BrowserTab(nextTabId++, "Новая вкладка", "")
-            tabs.add(fresh)
-            activeTabId = fresh.id
-        } else if (wasActive) {
-            activeTabId = tabs.getOrNull((oldIndex - 1).coerceAtLeast(0))?.id ?: tabs.first().id
-        }
+        tabs.clear(); tabs.addAll(next.tabs)
+        activeTabId = next.activeTabId
+        nextTabId = next.nextTabId
         persistTabs()
         val selected = tabs.first { it.id == activeTabId }
         updateTab(selected.url, selected.title)
@@ -339,6 +344,7 @@ private fun FerBrowsApp() {
         canForward = webViews[selected.id]?.canGoForward() == true
         loading = false; progress = 0; pageError = null
     }
+
     BackHandler(enabled = tabDialog || menuDialog || showBookmarks || showHistory || webView.canGoBack() || tabs.size > 1) {
         when {
             tabDialog -> tabDialog = false
@@ -378,16 +384,7 @@ private fun FerBrowsApp() {
                     .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
             ) {
                 Header(
-                    onNewTab = {
-                        val id = nextTabId++
-                        tabs.add(BrowserTab(id, "Новая вкладка", ""))
-                        activeTabId = id
-                        persistTabs()
-                        currentUrl = ""
-                        address = ""
-                        pageTitle = "Новая вкладка"
-                        canBack = false; canForward = false; loading = false; progress = 0
-                    },
+                    onNewTab = { addTab() },
                     onTabs = { tabDialog = true },
                     onMenu = { menuDialog = true }
                 )
@@ -490,14 +487,7 @@ private fun FerBrowsApp() {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val id = nextTabId++
-                    tabs.add(BrowserTab(id, "Новая вкладка", ""))
-                    activeTabId = id
-                    persistTabs()
-                    currentUrl = ""
-                    address = ""
-                    pageTitle = "Новая вкладка"
-                    canBack = false; canForward = false; loading = false; progress = 0
+                    addTab()
                     tabDialog = false
                 }) { Text("Новая вкладка", color = Lime) }
             }
