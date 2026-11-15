@@ -158,6 +158,8 @@ private fun FerBrowsApp() {
     var downloads by remember { mutableStateOf(downloadsStore.query()) }
     var showExitConfirm by remember { mutableStateOf(false) }
     var bookmarkEditing by remember { mutableStateOf<String?>(null) }
+    val onboardingPrefs = remember { context.getSharedPreferences("ferbrows_onboarding", Context.MODE_PRIVATE) }
+    var showOnboarding by remember { mutableStateOf(!onboardingPrefs.getBoolean("completed", false)) }
     val settingsStore = remember { BrowserSettingsStore(context) }
     var browserSettings by remember { mutableStateOf(settingsStore.load()) }
     val store = remember { BrowserStore(context) }
@@ -485,6 +487,7 @@ private fun FerBrowsApp() {
             showSettings -> showSettings = false
             showDownloads -> showDownloads = false
             showExitConfirm -> showExitConfirm = false
+            showOnboarding -> { showOnboarding = false; onboardingPrefs.edit().putBoolean("completed", true).apply() }
             webView.canGoBack() -> webView.goBack()
             tabs.size > 1 -> closeTab(tabs.first { it.id == activeTabId })
             else -> showExitConfirm = true
@@ -673,8 +676,13 @@ private fun FerBrowsApp() {
                         showSettings = true
                         menuDialog = false
                     }
-                    MenuRow("О браузере", "FerBrows 0.1.0 · Chromium WebView") {
+                    MenuRow("Политика конфиденциальности", "Как браузер обрабатывает данные") {
                         menuDialog = false
+                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Toska-0/FerBrows/blob/main/PRIVACY.md"))) }
+                    }
+                    MenuRow("Сообщить об ошибке", "Обратная связь и предложения") {
+                        menuDialog = false
+                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Toska-0/FerBrows/issues"))) }
                     }
                 }
             },
@@ -715,6 +723,19 @@ private fun FerBrowsApp() {
     }
     
 
+
+
+    if (showOnboarding) {
+        WelcomeDialog(
+            onStart = {
+                showOnboarding = false
+                onboardingPrefs.edit().putBoolean("completed", true).apply()
+            },
+            onPrivacyPolicy = {
+                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Toska-0/FerBrows/blob/main/PRIVACY.md"))) }
+            }
+        )
+    }
 
     if (showDownloads) {
         DownloadsDialog(
