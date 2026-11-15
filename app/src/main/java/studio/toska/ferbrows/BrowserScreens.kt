@@ -104,7 +104,9 @@ fun AddressBar(
                 .background(Panel).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Filled.Shield, null, tint = if (isSecure) Green else if (isInsecure) Color(0xFFFFB454) else Muted, modifier = Modifier.size(18.dp))
+            Icon(Icons.Filled.Shield, if (isSecure) "Защищённое соединение HTTPS" else if (isInsecure) "Незащищённое соединение HTTP" else "Статус соединения", tint = if (isSecure) Green else if (isInsecure) Color(0xFFFFB454) else Muted, modifier = Modifier.size(18.dp))
+            if (isInsecure) Text("HTTP", color = Color(0xFFFFB454), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            else if (isSecure) Text("HTTPS", color = Green, fontSize = 9.sp, fontWeight = FontWeight.Bold)
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
