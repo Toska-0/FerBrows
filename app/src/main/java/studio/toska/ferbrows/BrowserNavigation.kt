@@ -27,6 +27,6 @@ object BrowserNavigation {
         val scheme = uri.scheme?.lowercase(Locale.ROOT)
         val host = uri.host
         if ((scheme != "http" && scheme != "https") || host.isNullOrBlank()) null
-        else URI(scheme, uri.userInfo, host, uri.port, uri.rawPath, uri.rawQuery, uri.rawFragment).toASCIIString()
+        else uri.normalize().toASCIIString()
     }.getOrNull()
 }
