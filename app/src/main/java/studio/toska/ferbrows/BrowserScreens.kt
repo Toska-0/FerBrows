@@ -68,7 +68,7 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(Modifier.size(7.dp).clip(CircleShape).background(if (active) Lime else Muted))
-                Text(tab.title.ifBlank { "Новая вкладка" }, color = if (active) White else Muted,
+                Text((if (tab.isPrivate) "ИНКОГНИТО · " else "") + tab.title.ifBlank { "Новая вкладка" }, color = if (tab.isPrivate) Lime else if (active) White else Muted,
                     fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 7.dp))
                 IconButton(onClick = { onClose(tab) }, modifier = Modifier.size(22.dp)) {
                     Icon(Icons.Filled.Close, "Закрыть вкладку", tint = Muted, modifier = Modifier.size(13.dp))
@@ -221,7 +221,7 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
             Spacer(Modifier.height(28.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Shield, null, tint = Green, modifier = Modifier.size(15.dp))
-                Text(" Safe Browsing включён · защита от трекеров в разработке", color = Muted, fontSize = 9.sp)
+                Text(" Safe Browsing · блокировка известных трекеров", color = Muted, fontSize = 9.sp)
             }
             Spacer(Modifier.height(30.dp))
         }
