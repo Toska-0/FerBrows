@@ -782,6 +782,8 @@ private fun FerBrowsApp() {
             },
             onClearHistory = {
                 history.clear()
+                webViews.values.forEach { it.clearHistory() }
+                tabs.forEach { store.clearWebViewState(it.id) }
                 persistHistory()
                 Toast.makeText(context, "История очищена", Toast.LENGTH_SHORT).show()
             },
