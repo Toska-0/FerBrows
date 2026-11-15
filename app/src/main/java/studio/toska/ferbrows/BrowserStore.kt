@@ -48,7 +48,7 @@ class BrowserStore(context: Context) {
     fun loadHistory(): List<HistoryEntry> = runCatching {
         val raw = prefs.getString("history_v2", null)
         if (raw == null) {
-            return prefs.getString("history", null)?.split("\\n")?.filter { it.startsWith("http") }
+            return prefs.getString("history", null)?.lineSequence().filter { it.startsWith("http") }.toList()
                 ?.distinct()?.take(100)?.map { HistoryEntry(it, it, 0L) } ?: emptyList()
         }
         val array = JSONArray(raw)
