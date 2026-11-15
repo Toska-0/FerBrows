@@ -756,7 +756,7 @@ private fun FerBrowsApp() {
         BookmarkEditDialog(
             initialUrl = bookmarkEditing.orEmpty(),
             onSave = { raw ->
-                val updated = BrowserNavigation.resolveInput(raw)
+                val updated = if (raw.trim().contains(" ")) null else BrowserNavigation.resolveInput(raw)
                 if (updated != null && (updated.startsWith("https://") || updated.startsWith("http://"))) {
                     val index = bookmarks.indexOf(bookmarkEditing)
                     if (index >= 0) {
