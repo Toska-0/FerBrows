@@ -29,12 +29,14 @@ jobs:
           gradle-version: 8.9
       - name: Run unit tests
         run: gradle --no-daemon testDebugUnitTest
-      - name: Build APK
-        run: gradle --no-daemon assembleDebug
+      - name: Build APKs
+        run: gradle --no-daemon assembleDebug assembleRelease
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FerBrows-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: FerBrows-android-apks
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
