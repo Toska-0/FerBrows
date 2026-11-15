@@ -8,6 +8,9 @@ import android.os.Parcel
 import android.util.Base64
 import android.content.Intent
 import android.net.Uri
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.app.DownloadManager
 import android.content.Context
 import android.os.Environment
@@ -142,6 +145,7 @@ private fun FerBrowsApp() {
     var pageTitle by remember { mutableStateOf("Новая вкладка") }
     var progress by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(false) }
+    var networkOnline by remember { mutableStateOf(hasValidatedInternet(context)) }
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
     var tabDialog by remember { mutableStateOf(false) }
@@ -157,6 +161,23 @@ private fun FerBrowsApp() {
     val settingsStore = remember { BrowserSettingsStore(context) }
     var browserSettings by remember { mutableStateOf(settingsStore.load()) }
     val store = remember { BrowserStore(context) }
+    val connectivityManager = remember { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
+    DisposableEffect(connectivityManager) {
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                networkOnline = hasValidatedInternet(context)
+            }
+            override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+                networkOnline = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            }
+            override fun onLost(network: Network) {
+                networkOnline = hasValidatedInternet(context)
+            }
+        }
+        runCatching { connectivityManager.registerDefaultNetworkCallback(callback) }
+        onDispose { runCatching { connectivityManager.unregisterNetworkCallback(callback) } }
+    }
     val restoredTabs = remember { store.loadTabs() }
     var activeTabId by remember { mutableIntStateOf(store.loadActiveTabId().takeIf { id -> restoredTabs.any { it.id == id } } ?: restoredTabs.firstOrNull()?.id ?: 1) }
     var nextTabId by remember { mutableIntStateOf(maxOf(store.loadNextTabId(), (restoredTabs.maxOfOrNull { it.id } ?: 0) + 1)) }
@@ -236,6 +257,14 @@ private fun FerBrowsApp() {
                 } catch (_: Exception) { Toast.makeText(context, "Ошибка загрузки", Toast.LENGTH_SHORT).show() }
             }
             webChromeClient = object : WebChromeClient() {
+                override fun onPermissionRequest(request: android.webkit.PermissionRequest?) {
+                    request?.deny()
+                }
+
+                override fun onGeolocationPermissionsShowPrompt(origin: String?, callback: android.webkit.GeolocationPermissions.Callback?) {
+                    callback?.invoke(origin, false, false)
+                }
+
                 override fun onShowFileChooser(
                     webView: WebView?,
                     filePathCallback: ValueCallback<Array<Uri>>?,
@@ -758,4 +787,12 @@ private fun FerBrowsApp() {
             }
         )
     }
+}
+\n
+private fun hasValidatedInternet(context: Context): Boolean {
+    val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val network = manager.activeNetwork ?: return false
+    val capabilities = manager.getNetworkCapabilities(network) ?: return false
+    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 }
