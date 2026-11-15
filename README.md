@@ -36,6 +36,7 @@ JavaScript is enabled by default for website compatibility and can be disabled i
 - `BrowserScreens.kt`: Compose browser interface.
 - `BrowserStore.kt`: persisted tabs, bookmarks and history.
 - `BrowserSettings.kt` / `BrowserSettingsDialog.kt`: browser preferences and settings UI.
+- `BrowserDownloadsStore.kt` / `DownloadsDialog.kt`: tracked downloads and file actions.
 - `BookmarkEditDialog.kt`: bookmark editing.
 - `BrowserNavigation.kt`: URL/search input validation.
 - `BrowserTabReducer.kt`: deterministic tab transitions.
@@ -55,12 +56,11 @@ The debug APK is created at `app/build/outputs/apk/debug/app-debug.apk`. Release
 
 ## Continuous integration
 
-GitHub Actions runs unit tests and builds the debug APK on pushes and pull requests to `main`. It also supports manual runs. Download the `FerBrows-android-apks` artifact from a successful workflow run.
+GitHub Actions runs unit tests and builds debug and release APK variants on pushes and pull requests to `main`. It also supports manual runs. Download the `FerBrows-android-apks` artifact from a successful workflow run.
 
 ## Known gaps before a public release
 
-- Download list with live progress, open and remove actions.
-- Full site-permission controls and a clearer live network-status indicator.
+- Per-site permission controls (camera, microphone and geolocation are currently denied by default).
 - Device-level UI/instrumentation tests and a broader Android/device/network test matrix.
 - A full architecture split of the browser orchestration currently in `MainActivity.kt`.
 - Production release signing, store listing assets and a first-run onboarding flow.
