@@ -23,6 +23,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.ValueCallback
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import androidx.webkit.ProfileStore
@@ -210,6 +212,18 @@ private fun FerBrowsApp() {
                 else store.clearWebViewState(tabId)
             } finally { parcel.recycle() }
         }.onFailure { store.clearWebViewState(tabId) }
+    }
+
+    val lifecycleActivity = context as? ComponentActivity
+    DisposableEffect(lifecycleActivity) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
+                persistTabs()
+                webViews.forEach { (tabId, view) -> persistWebViewState(tabId, view) }
+            }
+        }
+        lifecycleActivity?.lifecycle?.addObserver(observer)
+        onDispose { lifecycleActivity?.lifecycle?.removeObserver(observer) }
     }
 
     fun updateTab(url: String, title: String) {
