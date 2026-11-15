@@ -4,7 +4,24 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val signingStorePath = System.getenv("FERBROWS_KEYSTORE_PATH")
+val signingStorePassword = System.getenv("FERBROWS_KEYSTORE_PASSWORD")
+val signingKeyAlias = System.getenv("FERBROWS_KEY_ALIAS")
+val signingKeyPassword = System.getenv("FERBROWS_KEY_PASSWORD")
+val hasReleaseSigning = listOf(signingStorePath, signingStorePassword, signingKeyAlias, signingKeyPassword).all { !it.isNullOrBlank() }
+
 android {
+    if (hasReleaseSigning) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(signingStorePath!!)
+                storePassword = signingStorePassword
+                keyAlias = signingKeyAlias
+                keyPassword = signingKeyPassword
+            }
+        }
+    }
+
     namespace = "studio.toska.ferbrows"
     compileSdk = 35
 
@@ -18,6 +35,7 @@ android {
 
     buildTypes {
         release {
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
