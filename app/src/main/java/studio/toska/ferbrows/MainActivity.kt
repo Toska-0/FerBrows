@@ -535,7 +535,8 @@ private fun FerBrowsApp() {
                 Header(
                     onNewTab = { addTab() },
                     onTabs = { tabDialog = true },
-                    onMenu = { menuDialog = true }
+                    onMenu = { menuDialog = true },
+                    networkOnline = networkOnline
                 )
 
                 TabStrip(
