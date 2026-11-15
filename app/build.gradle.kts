@@ -29,6 +29,7 @@ android {
         applicationId = "studio.toska.ferbrows"
         minSdk = 24
         targetSdk = 35
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         versionCode = 2
         versionName = "0.2.0"
     }
