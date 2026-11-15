@@ -81,6 +81,9 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
 @Composable
 fun AddressBar(
     value: String,
+    isSecure: Boolean,
+    isInsecure: Boolean,
+    canBookmark: Boolean,
     loading: Boolean,
     progress: Int,
     onValueChange: (String) -> Unit,
@@ -94,8 +97,7 @@ fun AddressBar(
                 .background(Panel).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val secure = value.startsWith("https://", ignoreCase = true)
-            Icon(Icons.Filled.Shield, null, tint = if (secure) Green else if (value.startsWith("http://", true)) Color(0xFFFFB454) else Muted, modifier = Modifier.size(18.dp))
+            Icon(Icons.Filled.Shield, null, tint = if (isSecure) Green else if (isInsecure) Color(0xFFFFB454) else Muted, modifier = Modifier.size(18.dp))
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
@@ -111,8 +113,8 @@ fun AddressBar(
                     }
                 }
             )
-            IconButton(onClick = onBookmark, modifier = Modifier.size(34.dp), enabled = value.startsWith("http")) {
-                Icon(Icons.Filled.Star, "В закладки", tint = if (value.startsWith("http")) Lime else Muted, modifier = Modifier.size(19.dp))
+            IconButton(onClick = onBookmark, modifier = Modifier.size(34.dp), enabled = canBookmark) {
+                Icon(Icons.Filled.Star, "В закладки", tint = if (canBookmark) Lime else Muted, modifier = Modifier.size(19.dp))
             }
             IconButton(onClick = onRefresh, modifier = Modifier.size(34.dp)) {
                 Icon(Icons.Filled.Refresh, "Обновить", tint = White, modifier = Modifier.size(19.dp))
