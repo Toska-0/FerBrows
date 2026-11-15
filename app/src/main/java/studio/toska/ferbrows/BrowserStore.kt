@@ -4,7 +4,7 @@ import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 
-data class BrowserTab(val id: Int, val title: String, val url: String)
+data class BrowserTab(val id: Int, val title: String, val url: String, val isPrivate: Boolean = false)
 data class HistoryEntry(val url: String, val title: String, val visitedAt: Long)
 
 class BrowserStore(context: Context) {
@@ -19,9 +19,11 @@ class BrowserStore(context: Context) {
 
     fun saveTabs(tabs: List<BrowserTab>, activeId: Int, nextId: Int) {
         val array = JSONArray()
-        tabs.forEach { tab -> array.put(JSONObject().put("id", tab.id).put("title", tab.title).put("url", tab.url)) }
+        tabs.filterNot { it.isPrivate }.forEach { tab -> array.put(JSONObject().put("id", tab.id).put("title", tab.title).put("url", tab.url)) }
+        val safeActiveId = tabs.firstOrNull { it.id == activeId && !it.isPrivate }?.id
+            ?: tabs.firstOrNull { !it.isPrivate }?.id ?: 1
         prefs.edit().putString("tabs_v2", array.toString())
-            .putInt("active_tab_id", activeId).putInt("next_tab_id", nextId).apply()
+            .putInt("active_tab_id", safeActiveId).putInt("next_tab_id", nextId).apply()
     }
 
     fun loadActiveTabId(): Int = prefs.getInt("active_tab_id", 1)
