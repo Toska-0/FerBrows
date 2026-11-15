@@ -50,6 +50,7 @@ Requirements: JDK 17, Gradle 8.9 and Android SDK 35.
 
 ```bash
 gradle --no-daemon testDebugUnitTest
+gradle --no-daemon connectedDebugAndroidTest
 gradle --no-daemon assembleDebug
 gradle --no-daemon assembleRelease
 ```
@@ -63,7 +64,7 @@ GitHub Actions runs unit tests and builds debug and release APK variants on push
 ## Known gaps before a public release
 
 - Per-site permission controls (camera, microphone and geolocation are currently denied by default).
-- Device-level UI/instrumentation tests and a broader Android/device/network test matrix.
+- Broader Android/device/network test matrix beyond the initial Android 35 UI smoke tests.
 - A full architecture split of the browser orchestration currently in `MainActivity.kt`.
 - Production signing secrets and store listing screenshots/metadata.
 - Tracker filter maintenance and a review of WebView/provider privacy behavior.
