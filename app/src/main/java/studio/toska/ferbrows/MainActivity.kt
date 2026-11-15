@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.padding
@@ -43,6 +44,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -388,7 +390,10 @@ private fun FerBrowsApp() {
             containerColor = Panel,
             title = { Text("Вкладки", color = White, fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     tabs.forEach { tab ->
                         Row(
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
@@ -482,12 +487,12 @@ private fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit)
         modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 10.dp, top = 12.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(Lime), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Lime), contentAlignment = Alignment.Center) {
             Text("F", color = Background, fontSize = 22.sp, fontWeight = FontWeight.Black)
         }
         Column(Modifier.weight(1f).padding(start = 10.dp)) {
             Text("FerBrows", color = White, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
-            Text("FAST · PRIVATE · YOURS", color = Muted, fontSize = 8.sp, letterSpacing = 1.5.sp)
+            Text("FAST · SIMPLE · YOURS", color = Muted, fontSize = 8.sp, letterSpacing = 1.5.sp)
         }
         IconButton(onClick = onNewTab) { Icon(Icons.Filled.Add, "Новая вкладка", tint = Lime) }
         IconButton(onClick = onTabs) { Icon(Icons.Filled.Tab, "Вкладки", tint = White) }
@@ -630,7 +635,7 @@ private fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, boo
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(PanelSoft), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.Language, null, tint = Lime)
+                    Text(site.first.take(1), color = Lime, fontSize = 20.sp, fontWeight = FontWeight.Black)
                 }
                 Column(Modifier.weight(1f).padding(start = 12.dp)) {
                     Text(site.first, color = White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -644,15 +649,25 @@ private fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, boo
                 Spacer(Modifier.height(20.dp))
                 Text("ИЗБРАННОЕ", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
                 Spacer(Modifier.height(10.dp))
-                bookmarks.take(3).forEach { url ->
-                    Text(url, color = Green, fontSize = 12.sp,
-                        modifier = Modifier.fillMaxWidth().clickable { onOpen(url) }.padding(vertical = 8.dp), maxLines = 1)
+                bookmarks.take(6).forEach { url ->
+                    val host = Uri.parse(url).host?.removePrefix("www.") ?: url
+                    Row(
+                        Modifier.fillMaxWidth().padding(bottom = 7.dp).clip(RoundedCornerShape(12.dp))
+                            .background(Panel).clickable { onOpen(url) }.padding(horizontal = 13.dp, vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(Modifier.size(30.dp).clip(RoundedCornerShape(9.dp)).background(PanelSoft), contentAlignment = Alignment.Center) {
+                            Text(host.take(1).uppercase(), color = Lime, fontWeight = FontWeight.Bold)
+                        }
+                        Text(host, color = White, fontSize = 12.sp, modifier = Modifier.weight(1f).padding(start = 10.dp), maxLines = 1)
+                        Icon(Icons.Filled.ArrowForward, null, tint = Muted, modifier = Modifier.size(15.dp))
+                    }
                 }
             }
             Spacer(Modifier.height(28.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Shield, null, tint = Green, modifier = Modifier.size(15.dp))
-                Text(" Защита и приватность — в разработке", color = Muted, fontSize = 10.sp)
+                Text(" Safe Browsing включён · защита от трекеров в разработке", color = Muted, fontSize = 9.sp)
             }
             Spacer(Modifier.height(30.dp))
         }
@@ -720,7 +735,10 @@ private fun SimpleListDialog(
         containerColor = Panel,
         title = { Text(title, color = White, fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Column(
+                modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
                 if (items.isEmpty()) Text(emptyText, color = Muted)
                 items.take(30).forEach { item ->
                     Text(item, color = White, fontSize = 12.sp, maxLines = 1,
