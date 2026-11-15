@@ -520,7 +520,7 @@ private fun FerBrowsApp() {
                             enter = if (browserSettings.reducedMotion) EnterTransition.None else fadeIn(),
                             exit = if (browserSettings.reducedMotion) ExitTransition.None else fadeOut()
                         ) {
-                            HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks)
+                            HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled)
                         }
                     }
                     if (pageError != null) {
