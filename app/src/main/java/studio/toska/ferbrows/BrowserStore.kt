@@ -57,6 +57,17 @@ class BrowserStore(context: Context) {
         }
     }.getOrDefault(emptyList())
 
+    fun loadWebViewState(tabId: Int): String? = prefs.getString("webview_state_$tabId", null)
+
+    fun saveWebViewState(tabId: Int, encodedState: String) {
+        if (encodedState.length <= 700_000) prefs.edit().putString("webview_state_$tabId", encodedState).apply()
+        else clearWebViewState(tabId)
+    }
+
+    fun clearWebViewState(tabId: Int) {
+        prefs.edit().remove("webview_state_$tabId").apply()
+    }
+
     fun saveHistory(items: List<HistoryEntry>) {
         val array = JSONArray()
         items.forEach { array.put(JSONObject().put("url", it.url).put("title", it.title).put("visitedAt", it.visitedAt)) }
