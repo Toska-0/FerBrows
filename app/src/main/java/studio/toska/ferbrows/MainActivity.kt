@@ -428,7 +428,7 @@ private fun FerBrowsApp() {
                         AnimatedVisibility(visible = currentUrl.isBlank(), modifier = Modifier.fillMaxSize()) {
                             HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks)
                         }
-                        if (pageError != null && currentUrl.isNotBlank()) {
+                        if (pageError != null) {
                             Surface(color = Panel, modifier = Modifier.fillMaxWidth().padding(12.dp), shape = RoundedCornerShape(14.dp)) {
                                 Text(pageError ?: "", color = White, fontSize = 12.sp, modifier = Modifier.padding(14.dp))
                             }
