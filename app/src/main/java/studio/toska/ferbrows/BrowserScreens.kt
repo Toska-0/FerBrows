@@ -44,19 +44,19 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, networkOnline: Boolean = true) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 10.dp, top = 12.dp, bottom = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Lime), contentAlignment = Alignment.Center) {
-            Text("F", color = Background, fontSize = 22.sp, fontWeight = FontWeight.Black)
+        Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(Lime), contentAlignment = Alignment.Center) {
+            Text("F", color = Background, fontSize = 20.sp, fontWeight = FontWeight.Black)
         }
         Column(Modifier.weight(1f).padding(start = 10.dp)) {
-            Text("FerBrows", color = White, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
-            Text("FAST · SIMPLE · YOURS", color = Muted, fontSize = 8.sp, letterSpacing = 1.5.sp)
+            Text("FerBrows", color = White, fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
+            Text("FAST · SIMPLE · YOURS", color = Muted, fontSize = 7.sp, letterSpacing = 1.2.sp)
         }
         Box(
             Modifier.clip(RoundedCornerShape(20.dp)).background(if (networkOnline) Green.copy(alpha = 0.10f) else Color(0xFFFFB454).copy(alpha = 0.12f))
-                .padding(horizontal = 8.dp, vertical = 5.dp)
+                .padding(horizontal = 7.dp, vertical = 4.dp)
         ) {
             Text(if (networkOnline) "ONLINE" else "ОФЛАЙН", color = if (networkOnline) Green else Color(0xFFFFB454), fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
         }
@@ -70,7 +70,7 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, network
 @Composable
 fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Unit, onClose: (BrowserTab) -> Unit, reducedMotion: Boolean = false) {
     Row(
-        modifier = Modifier.fillMaxWidth().then(if (reducedMotion) Modifier else Modifier.animateContentSize()).horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp),
+        modifier = Modifier.fillMaxWidth().then(if (reducedMotion) Modifier else Modifier.animateContentSize()).horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         tabs.forEach { tab ->
@@ -79,7 +79,7 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
                 modifier = Modifier.width(150.dp).clip(RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
                     .background(if (active) PanelSoft else Color(0xFF0A0E0A))
                     .border(1.dp, if (active) Lime.copy(alpha = 0.42f) else Color(0xFF1B241B), RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
-                    .clickable { onSelect(tab) }.padding(start = 11.dp, end = 5.dp, top = 9.dp, bottom = 9.dp),
+                    .clickable { onSelect(tab) }.padding(start = 9.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(Modifier.size(7.dp).clip(CircleShape).background(if (active) Lime else Muted))
@@ -107,9 +107,9 @@ fun AddressBar(
     onBookmark: () -> Unit,
     reducedMotion: Boolean = false
 ) {
-    Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+    Column(Modifier.padding(horizontal = 12.dp, vertical = 5.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(17.dp))
+            modifier = Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(17.dp))
                 .background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(17.dp)).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
