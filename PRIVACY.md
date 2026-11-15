@@ -28,7 +28,7 @@ If multi-profile is unavailable, FerBrows refuses to create a private tab rather
 
 The optional tracker protection feature blocks requests to a small built-in list of known advertising and analytics hostnames. It is not a comprehensive filter, is not automatically updated, and may miss trackers or affect some website features.
 
-HTTPS encrypts traffic between the browser and the website, but does not prove that a website is trustworthy. FerBrows does not provide a VPN, proxy, or anonymity service.
+HTTP pages are allowed and are marked as not secure in the address bar; HTTP traffic is not encrypted. HTTPS encrypts traffic between the browser and the website, but does not prove that a website is trustworthy. FerBrows does not provide a VPN, proxy, or anonymity service.\n\nCamera, microphone and geolocation permission requests from websites are denied by default in this version. Per-site grant/revoke controls are not yet available.
 
 ## Controls
 
