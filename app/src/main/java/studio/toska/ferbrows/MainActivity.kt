@@ -83,6 +83,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.key
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -232,11 +233,13 @@ private fun FerBrowsApp() {
                 }
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                    if (activeTabId == tabId) pageError = null
                     if (url == "about:blank") {
                         if (activeTabId == tabId) { currentUrl = ""; address = ""; pageTitle = "Новая вкладка" }
                     } else if (!url.isNullOrBlank()) {
                         val index = tabs.indexOfFirst { it.id == tabId }
                         if (index >= 0) tabs[index] = tabs[index].copy(url = url)
+                        persistTabs()
                         if (activeTabId == tabId) { currentUrl = url; address = url; loading = true }
                     }
                 }
@@ -263,6 +266,7 @@ private fun FerBrowsApp() {
                         val title = view?.title?.takeIf { it.isNotBlank() } ?: url
                         val index = tabs.indexOfFirst { it.id == tabId }
                         if (index >= 0) tabs[index] = tabs[index].copy(title = title, url = url)
+                        persistTabs()
                         val existingHistoryIndex = history.indexOfFirst { it.url == url }
                         if (existingHistoryIndex >= 0) history.removeAt(existingHistoryIndex)
                         history.add(0, HistoryEntry(url, title, System.currentTimeMillis()))
@@ -276,6 +280,16 @@ private fun FerBrowsApp() {
         }
     }
 
+    LaunchedEffect(activeTabId) {
+        val restored = tabs.firstOrNull { it.id == activeTabId }
+        if (restored != null) {
+            currentUrl = restored.url
+            address = restored.url
+            pageTitle = restored.title
+            pageError = null
+        }
+    }
+
     val webView = remember(activeTabId) {
         webViews[activeTabId] ?: createWebView(activeTabId).also { created ->
             webViews[activeTabId] = created
@@ -283,7 +297,10 @@ private fun FerBrowsApp() {
         }
     }
     DisposableEffect(Unit) {
-        onDispose { webViews.values.toList().forEach { it.stopLoading(); it.destroy() }; webViews.clear() }
+        onDispose { webViews.values.toList().forEach { view ->
+            (view.parent as? ViewGroup)?.removeView(view)
+            view.stopLoading(); view.destroy()
+        }; webViews.clear() }
     }
     fun switchTo(tab: BrowserTab) {
         activeTabId = tab.id
@@ -302,7 +319,12 @@ private fun FerBrowsApp() {
         val wasActive = activeTabId == tab.id
         val oldIndex = index
         val removed = tabs.removeAt(index)
-        webViews.remove(removed.id)?.let { it.stopLoading(); it.destroy() }
+        webViews.remove(removed.id)?.let { view ->
+            (view.parent as? ViewGroup)?.removeView(view)
+            view.stopLoading()
+            view.loadUrl("about:blank")
+            view.destroy()
+        }
         if (tabs.isEmpty()) {
             val fresh = BrowserTab(nextTabId++, "Новая вкладка", "")
             tabs.add(fresh)
