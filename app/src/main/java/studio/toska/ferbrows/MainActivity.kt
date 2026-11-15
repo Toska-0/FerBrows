@@ -249,7 +249,7 @@ private fun FerBrowsApp() {
                         .setDescription("Загрузка через FerBrows").setMimeType(mimeType)
                         .addRequestHeader("User-Agent", userAgent)
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
+                        .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, name)
                     val downloadId = (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
                     downloadsStore.remember(downloadId)
                     downloads = downloadsStore.query()
