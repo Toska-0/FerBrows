@@ -109,6 +109,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import java.net.URLEncoder
+import kotlinx.coroutines.delay
 
 internal val Background = Color(0xFF050705)
 internal val Panel = Color(0xFF111811)
@@ -148,6 +149,9 @@ private fun FerBrowsApp() {
     var showBookmarks by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showDownloads by remember { mutableStateOf(false) }
+    val downloadsStore = remember { BrowserDownloadsStore(context) }
+    var downloads by remember { mutableStateOf(downloadsStore.query()) }
     var showExitConfirm by remember { mutableStateOf(false) }
     var bookmarkEditing by remember { mutableStateOf<String?>(null) }
     val settingsStore = remember { BrowserSettingsStore(context) }
@@ -225,7 +229,9 @@ private fun FerBrowsApp() {
                         .addRequestHeader("User-Agent", userAgent)
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                         .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
-                    (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+                    val downloadId = (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+                    downloadsStore.remember(downloadId)
+                    downloads = downloadsStore.query()
                     Toast.makeText(context, "Загрузка началась", Toast.LENGTH_SHORT).show()
                 } catch (_: Exception) { Toast.makeText(context, "Ошибка загрузки", Toast.LENGTH_SHORT).show() }
             }
@@ -329,6 +335,13 @@ private fun FerBrowsApp() {
                     if (url != "about:blank") persistWebViewState(tabId, view)
                 }
             }
+        }
+    }
+
+    LaunchedEffect(showDownloads) {
+        while (showDownloads) {
+            downloads = downloadsStore.query()
+            delay(800)
         }
     }
 
@@ -437,6 +450,7 @@ private fun FerBrowsApp() {
             showBookmarks -> showBookmarks = false
             showHistory -> showHistory = false
             showSettings -> showSettings = false
+            showDownloads -> showDownloads = false
             showExitConfirm -> showExitConfirm = false
             webView.canGoBack() -> webView.goBack()
             tabs.size > 1 -> closeTab(tabs.first { it.id == activeTabId })
@@ -617,6 +631,11 @@ private fun FerBrowsApp() {
                         addPrivateTab()
                         menuDialog = false
                     }
+                    MenuRow("Загрузки", "Прогресс, открытие и удаление файлов") {
+                        downloads = downloadsStore.query()
+                        showDownloads = true
+                        menuDialog = false
+                    }
                     MenuRow("Настройки", "Поиск, домашняя страница, приватность и данные") {
                         showSettings = true
                         menuDialog = false
@@ -662,6 +681,22 @@ private fun FerBrowsApp() {
         )
     }
     
+
+
+    if (showDownloads) {
+        DownloadsDialog(
+            downloads = downloads,
+            onOpen = { id ->
+                runCatching { downloadsStore.open(id) }
+                    .onFailure { Toast.makeText(context, "Не удалось открыть файл", Toast.LENGTH_SHORT).show() }
+            },
+            onRemove = { id ->
+                downloadsStore.remove(id)
+                downloads = downloadsStore.query()
+            },
+            onDismiss = { showDownloads = false }
+        )
+    }
 
     if (bookmarkEditing != null) {
         BookmarkEditDialog(
