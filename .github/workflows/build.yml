@@ -36,6 +36,15 @@ jobs:
         run: echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/ferbrows-release.jks"
       - name: Run unit tests
         run: gradle --no-daemon testDebugUnitTest
+      - name: Run Android UI smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: gradle --no-daemon connectedDebugAndroidTest
       - name: Build APKs
         env:
           FERBROWS_KEYSTORE_PATH: ${{ secrets.FERBROWS_KEYSTORE_BASE64 != '' && format('{0}/ferbrows-release.jks', runner.temp) || '' }}
