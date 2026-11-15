@@ -374,13 +374,17 @@ private fun FerBrowsApp() {
         }
     }
 
-    LaunchedEffect(activeTabId) {
+    LaunchedEffect(activeTabId, browserSettings.homePage) {
         val restored = tabs.firstOrNull { it.id == activeTabId }
         if (restored != null) {
             currentUrl = restored.url
             address = restored.url
             pageTitle = restored.title
             pageError = null
+            if (restored.url.isBlank() && browserSettings.homePage.isNotBlank()) {
+                val homepage = BrowserNavigation.resolveInput(browserSettings.homePage, browserSettings.searchEngine)
+                if (homepage != null) webViews[activeTabId]?.loadUrl(homepage)
+            }
         }
     }
 
