@@ -15,8 +15,11 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.ValueCallback
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -131,6 +134,11 @@ private fun FerBrowsApp() {
     val bookmarks = remember { mutableStateListOf("https://www.google.com", "https://www.youtube.com", "https://github.com") }
     val webViews = remember { mutableStateMapOf<Int, WebView>() }
     val preferences = remember { context.getSharedPreferences("ferbrows_state", Context.MODE_PRIVATE) }
+    val pendingFileCallback = remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        pendingFileCallback.value?.onReceiveValue(uri?.let { arrayOf(it) })
+        pendingFileCallback.value = null
+    }
     val savedBookmarks = remember { preferences.getStringSet("bookmarks", null) }
     val savedHistory = remember { preferences.getString("history", null) }
     if (savedBookmarks != null && bookmarks.size == 3) { bookmarks.clear(); bookmarks.addAll(savedBookmarks.toList()) }
@@ -172,11 +180,24 @@ private fun FerBrowsApp() {
                 } catch (_: Exception) { Toast.makeText(context, "Ошибка загрузки", Toast.LENGTH_SHORT).show() }
             }
             webChromeClient = object : WebChromeClient() {
+                override fun onShowFileChooser(
+                    webView: WebView?,
+                    filePathCallback: ValueCallback<Array<Uri>>?,
+                    fileChooserParams: FileChooserParams?
+                ): Boolean {
+                    pendingFileCallback.value?.onReceiveValue(null)
+                    pendingFileCallback.value = filePathCallback
+                    return try { filePicker.launch("*/*"); true }
+                    catch (_: Exception) { pendingFileCallback.value = null; filePathCallback?.onReceiveValue(null); false }
+                }
+
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                    progress = newProgress
-                    loading = newProgress < 100
-                    canBack = view?.canGoBack() == true
-                    canForward = view?.canGoForward() == true
+                    if (activeTabId == tabId) {
+                        progress = newProgress
+                        loading = newProgress < 100
+                        canBack = view?.canGoBack() == true
+                        canForward = view?.canGoForward() == true
+                    }
                 }
 
                 override fun onReceivedTitle(view: WebView?, title: String?) {
@@ -240,7 +261,7 @@ private fun FerBrowsApp() {
     }
     fun persistBookmarks() { preferences.edit().putStringSet("bookmarks", bookmarks.toSet()).apply() }
     fun switchTo(tab: BrowserTab) { activeTabId = tab.id; updateTab(tab.url, tab.title) }
-    BackHandler {
+    BackHandler(enabled = tabDialog || menuDialog || showBookmarks || showHistory || webView.canGoBack() || tabs.size > 1) {
         when {
             tabDialog -> tabDialog = false
             menuDialog -> menuDialog = false
