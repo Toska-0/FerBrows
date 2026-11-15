@@ -2,6 +2,7 @@ package studio.toska.ferbrows
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Build
 import android.os.Bundle
 import android.os.Parcel
@@ -151,6 +152,7 @@ private fun FerBrowsApp() {
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
     var tabDialog by remember { mutableStateOf(false) }
+    var tabPreviews by remember { mutableStateOf<Map<Int, Bitmap>>(emptyMap()) }
     var menuDialog by remember { mutableStateOf(false) }
     var showBookmarks by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
@@ -198,6 +200,25 @@ private fun FerBrowsApp() {
     fun persistTabs() = store.saveTabs(tabs.toList(), activeTabId, nextTabId)
     fun persistBookmarks() = store.saveBookmarks(bookmarks.toList())
     fun persistHistory() = store.saveHistory(history.toList())
+
+    fun openTabOverview() {
+        val snapshots = mutableMapOf<Int, Bitmap>()
+        webViews.forEach { (id, view) ->
+            runCatching {
+                if (view.width > 0 && view.height > 0) {
+                    val width = 360
+                    val height = (view.height.toFloat() * width / view.width).toInt().coerceIn(180, 520)
+                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                    val canvas = Canvas(bitmap)
+                    canvas.scale(width.toFloat() / view.width, height.toFloat() / view.height)
+                    view.draw(canvas)
+                    snapshots[id] = bitmap
+                }
+            }
+        }
+        tabPreviews = snapshots
+        tabDialog = true
+    }
 
     fun persistWebViewState(tabId: Int, view: WebView?) {
         if (view == null || tabs.firstOrNull { it.id == tabId }?.isPrivate == true) return
@@ -534,7 +555,7 @@ private fun FerBrowsApp() {
             ) {
                 Header(
                     onNewTab = { addTab() },
-                    onTabs = { tabDialog = true },
+                    onTabs = { openTabOverview() },
                     onMenu = { menuDialog = true },
                     networkOnline = networkOnline
                 )
@@ -614,7 +635,7 @@ private fun FerBrowsApp() {
                             persistTabs()
                         }
                     },
-                    onTabs = { tabDialog = true },
+                    onTabs = { openTabOverview() },
                     tabCount = tabs.size
                 )
             }
@@ -622,44 +643,17 @@ private fun FerBrowsApp() {
     }
 
     if (tabDialog) {
-        AlertDialog(
-            onDismissRequest = { tabDialog = false },
-            containerColor = Panel,
-            title = { Text("Вкладки", color = White, fontWeight = FontWeight.Bold) },
-            text = {
-                Column(
-                    modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    tabs.forEach { tab ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                                .background(if (tab.id == activeTabId) PanelSoft else Color.Transparent)
-                                .clickable {
-                                    switchTo(tab)
-                                    tabDialog = false
-                                }.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Filled.Language, null, tint = Green, modifier = Modifier.size(18.dp))
-                            Text(tab.title, color = White, modifier = Modifier.weight(1f).padding(start = 10.dp), maxLines = 1)
-                            IconButton(onClick = {
-                                if (tabs.size > 1) {
-                                    closeTab(tab)
-                                } else {
-                                    closeTab(tab)
-                                }
-                            }) { Icon(Icons.Filled.Close, "Закрыть", tint = Muted) }
-                        }
-                    }
-                }
+        TabOverviewDialog(
+            tabs = tabs.toList(),
+            activeId = activeTabId,
+            previews = tabPreviews,
+            onSelect = { tab -> switchTo(tab); tabDialog = false; tabPreviews = emptyMap() },
+            onClose = { tab ->
+                closeTab(tab)
+                tabPreviews = tabPreviews - tab.id
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    addTab()
-                    tabDialog = false
-                }) { Text("Новая вкладка", color = Lime) }
-            }
+            onNewTab = { addTab(); tabDialog = false; tabPreviews = emptyMap() },
+            onDismiss = { tabDialog = false; tabPreviews = emptyMap() }
         )
     }
 
