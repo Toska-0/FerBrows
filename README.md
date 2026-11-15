@@ -1,62 +1,75 @@
 # FerBrows
 
-FerBrows is an Android browser prototype with a dark AMOLED interface and lime accents. It uses the Chromium/Blink engine provided by Android System WebView.
+FerBrows is an Android browser prototype with a dark AMOLED interface and lime accents. It uses the Chromium/Blink engine supplied by Android System WebView.
 
-## Current functionality
+## Features
 
-- Multiple tabs with a separate WebView instance per tab
-- Explicit Compose identity for the active WebView and deterministic tab state transitions
-- Restores regular open tabs and the selected tab after process restart; pages are reloaded by URL (the full in-page session, scroll position and WebView back stack are not yet restored)
-- Address bar that distinguishes HTTP(S) URLs from search queries and rejects unsupported schemes
-- Back, forward, reload and home navigation
-- History with page titles and visit timestamps, limited to the latest 100 entries; repeat visits update the existing entry
-- Persistent bookmarks with remove and reorder controls
-- System download manager integration and website file chooser
-- Main-frame loading errors shown in the browser UI
-- Basic tracker blocking for a local list of known analytics and advertising hosts
-- Safe Browsing where supported by the Android WebView provider
-- Third-party cookies disabled for the default WebView profile and mixed HTTP content blocked
+- Multiple tabs with one WebView instance per tab and explicit Compose identity.
+- Ordinary tab metadata and selected tab restored after process restart; WebView state is saved where supported and falls back to the last URL.
+- Back, forward, reload, home and HTTP(S) address/search input.
+- Search provider selection: Google, DuckDuckGo or Bing.
+- Editable/reorderable/removable bookmarks.
+- Browsing history with title, visit time, search and clear controls.
+- Android DownloadManager integration and website file chooser.
+- Main-frame navigation errors shown in the browser.
+- Private tabs backed by AndroidX WebKit multi-profile when supported.
+- Optional blocking of a small built-in list of known advertising and analytics hosts.
+- Safe Browsing where supported by the installed WebView provider.
+- JavaScript, homepage, search provider and reduced-motion settings.
+- Controls to clear history, WebView cache, cookies and website storage.
 
 ## Private browsing
 
-The menu can create a private tab using the AndroidX WebKit multi-profile API when the installed WebView provider supports it. Private tabs use a separate WebView profile, are excluded from saved tabs, bookmarks and history, and the private profile is deleted when the last private tab is closed or the app is started again after an unclean exit. If the installed WebView does not support multi-profile, FerBrows reports that private tabs are unavailable rather than silently falling back to a shared profile.
+Private tabs use a separate AndroidX WebKit profile when the installed WebView provider supports multi-profile. Private tabs are excluded from saved tabs, bookmarks and history. The private profile is deleted when the last private tab is closed or when FerBrows starts after an unclean termination. If multi-profile is unavailable, FerBrows reports that private tabs are unavailable rather than silently using the ordinary profile.
+
+Private mode is not anonymity: websites, network operators, DNS providers, Android, the WebView provider and downloaded files may still expose or retain information. See [PRIVACY.md](PRIVACY.md).
 
 ## Privacy and security limits
 
-FerBrows is **not yet a fully hardened privacy browser**. Tracker blocking is a small built-in host list, not a comprehensive or automatically updated filter list; some trackers may pass and some site features may be affected. Safe Browsing helps warn about known dangerous sites; it does not block trackers and does not make an HTTP connection secure.
+FerBrows is not yet a fully hardened privacy browser. Tracker blocking is a small built-in hostname list, not a comprehensive or automatically updated filter list. Some trackers may pass and some site features may be affected. Safe Browsing is provider-dependent; it does not block trackers and does not make HTTP secure.
 
-JavaScript remains enabled for website compatibility. File URL access is disabled, mixed content is blocked, and third-party cookies are disabled for the default profile. The address bar distinguishes HTTPS from HTTP; HTTPS protects the connection in transit but is not a guarantee that a site itself is trustworthy. No VPN/proxy, sync, or extension support is provided.
+JavaScript is enabled by default for website compatibility and can be disabled in settings. File URL access is disabled, mixed content is blocked, and third-party cookies are disabled for the default profile. HTTPS encrypts traffic in transit but does not prove that a site itself is trustworthy. FerBrows provides no VPN, proxy, sync or extension support.
 
-## Architecture and tests
+## Architecture
 
-- `MainActivity.kt`: activity, browser orchestration and WebView lifecycle
-- `BrowserScreens.kt`: Compose UI
-- `BrowserStore.kt`: persistent tabs, bookmarks and history
-- `BrowserNavigation.kt`: URL/search input validation
-- `BrowserTabReducer.kt`: deterministic tab state transitions
-- `TrackerProtection.kt`: known tracker host matching
+- `MainActivity.kt`: browser orchestration and WebView lifecycle.
+- `BrowserScreens.kt`: Compose browser interface.
+- `BrowserStore.kt`: persisted tabs, bookmarks and history.
+- `BrowserSettings.kt` / `BrowserSettingsDialog.kt`: browser preferences and settings UI.
+- `BookmarkEditDialog.kt`: bookmark editing.
+- `BrowserNavigation.kt`: URL/search input validation.
+- `BrowserTabReducer.kt`: deterministic tab transitions.
+- `TrackerProtection.kt`: built-in tracker hostname matching.
 
-Unit tests cover address resolution, tracker matching and tab add/close/select transitions. The GitHub Actions workflow runs these tests before building the debug APK. Automated device-level UI/WebView tests are still needed.
-
-## Build
+## Build and test
 
 Requirements: JDK 17, Gradle 8.9 and Android SDK 35.
 
 ```bash
-gradle testDebugUnitTest
-gradle assembleDebug
+gradle --no-daemon testDebugUnitTest
+gradle --no-daemon assembleDebug
+gradle --no-daemon assembleRelease
 ```
 
-The APK is created at `app/build/outputs/apk/debug/app-debug.apk`.
+The debug APK is created at `app/build/outputs/apk/debug/app-debug.apk`. Release builds are not yet signed by the repository workflow; configure a protected signing key before distributing a release APK.
 
-## GitHub Actions
+## Continuous integration
 
-The workflow runs unit tests and builds a debug APK on pushes and pull requests to `main`, and can also be started manually from the Actions tab. Download the `FerBrows-debug-apk` artifact from a successful run.
+GitHub Actions runs unit tests and builds the debug APK on pushes and pull requests to `main`. It also supports manual runs. Download the `FerBrows-debug-apk` artifact from a successful workflow run.
+
+## Known gaps before a public release
+
+- Download list with live progress, open and remove actions.
+- Full site-permission controls and a clearer live network-status indicator.
+- Device-level UI/instrumentation tests and a broader Android/device/network test matrix.
+- A full architecture split of the browser orchestration currently in `MainActivity.kt`.
+- Production release signing, store listing assets and a first-run onboarding flow.
+- Tracker filter maintenance and a review of WebView/provider privacy behavior.
 
 ## Engine note
 
-This app uses Android System WebView, whose rendering engine is Chromium/Blink. It is not a separately bundled Chromium build; the installed WebView provider supplies engine updates.
+FerBrows uses Android System WebView, whose rendering engine is Chromium/Blink. It is not a separately bundled Chromium build; the installed WebView provider supplies engine updates.
 
-## Project status
+## Feedback
 
-Early development build: 0.1.0. The browser now has reliable tab identity and cleanup, persistent metadata, basic private profiles and a starter tracker blocklist. Full WebView session restoration, a maintained filter list, robust site-permission management, sync, extension support, and automated UI/instrumentation tests remain future work.
+Report bugs and feature requests at https://github.com/Toska-0/FerBrows/issues.
