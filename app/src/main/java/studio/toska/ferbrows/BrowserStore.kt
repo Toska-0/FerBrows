@@ -28,7 +28,8 @@ class BrowserStore(context: Context) {
     fun loadNextTabId(): Int = prefs.getInt("next_tab_id", 2)
 
     fun loadBookmarks(): List<String> = runCatching {
-        val array = JSONArray(prefs.getString("bookmarks_v2", null) ?: return emptyList())
+        val raw = prefs.getString("bookmarks_v2", null) ?: return listOf("https://www.google.com", "https://www.youtube.com", "https://github.com")
+        val array = JSONArray(raw)
         (0 until array.length()).map { array.optString(it) }.filter { it.startsWith("http://") || it.startsWith("https://") }
     }.getOrDefault(listOf("https://www.google.com", "https://www.youtube.com", "https://github.com"))
 
