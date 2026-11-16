@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -87,51 +88,55 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, network
 
 @Composable
 fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Unit, onClose: (BrowserTab) -> Unit, reducedMotion: Boolean = false, compact: Boolean = false) {
-    val closingTabIds = remember { mutableStateListOf<Int>() }
     val scope = rememberCoroutineScope()
+    val closingTabIds = remember { mutableStateListOf<Int>() }
+    val tabWidth by animateDpAsState(
+        targetValue = if (compact) 104.dp else 150.dp,
+        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 320),
+        label = "tabWidth"
+    )
+    val horizontalInset by animateDpAsState(if (compact) 7.dp else 12.dp, tween(if (reducedMotion) 0 else 320), label = "tabInset")
+    val tabGap by animateDpAsState(if (compact) 5.dp else 8.dp, tween(if (reducedMotion) 0 else 320), label = "tabGap")
+    val contentStart by animateDpAsState(if (compact) 5.dp else 9.dp, tween(if (reducedMotion) 0 else 320), label = "tabContentStart")
+    val contentTop by animateDpAsState(if (compact) 2.dp else 6.dp, tween(if (reducedMotion) 0 else 320), label = "tabContentTop")
+    val closeSize by animateDpAsState(if (compact) 19.dp else 22.dp, tween(if (reducedMotion) 0 else 320), label = "tabCloseSize")
+    val dotSize by animateDpAsState(if (compact) 5.dp else 7.dp, tween(if (reducedMotion) 0 else 320), label = "tabDotSize")
+    val textSize by animateDpAsState(if (compact) 10.dp else 11.dp, tween(if (reducedMotion) 0 else 320), label = "tabTextSize")
 
     Row(
         modifier = Modifier.fillMaxWidth()
-            .animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = if (compact) 8.dp else 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 7.dp)
+            .padding(horizontal = horizontalInset),
+        horizontalArrangement = Arrangement.spacedBy(tabGap)
     ) {
         tabs.forEach { tab ->
             key(tab.id) {
                 val active = tab.id == activeId
                 val isClosing = tab.id in closingTabIds
-
                 AnimatedVisibility(
                     visible = !isClosing,
-                    enter = EnterTransition.None,
+                    enter = if (reducedMotion) EnterTransition.None else fadeIn(tween(140)),
                     exit = if (reducedMotion) ExitTransition.None else
-                        shrinkHorizontally(
-                            animationSpec = tween(durationMillis = 220),
-                            shrinkTowards = Alignment.CenterHorizontally
-                        ) + fadeOut(animationSpec = tween(durationMillis = 160))
+                        shrinkHorizontally(tween(240), shrinkTowards = Alignment.CenterHorizontally) +
+                            fadeOut(tween(180))
                 ) {
                     Row(
-                        modifier = Modifier.animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
-                            .width(if (compact) 104.dp else 150.dp)
-                            .clip(RoundedCornerShape(topStart = if (compact) 9.dp else 13.dp, topEnd = if (compact) 9.dp else 13.dp))
+                        modifier = Modifier.width(tabWidth)
+                            .animateContentSize(tween(if (reducedMotion) 0 else 320))
+                            .clip(RoundedCornerShape(if (compact) 9.dp else 13.dp))
                             .background(if (active) PanelSoft else Color(0xFF0A0E0A))
-                            .border(
-                                1.dp,
-                                if (active) Lime.copy(alpha = 0.42f) else Color(0xFF1B241B),
-                                RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp)
-                            )
+                            .border(1.dp, if (active) Lime.copy(alpha = 0.42f) else Color(0xFF1B241B), RoundedCornerShape(if (compact) 9.dp else 13.dp))
                             .clickable(enabled = !isClosing) { onSelect(tab) }
-                            .padding(start = if (compact) 6.dp else 9.dp, end = 2.dp, top = if (compact) 2.dp else 6.dp, bottom = if (compact) 2.dp else 6.dp),
+                            .padding(start = contentStart, end = 2.dp, top = contentTop, bottom = contentTop),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(Modifier.size(if (compact) 6.dp else 7.dp).clip(CircleShape).background(if (active) Lime else Muted))
+                        Box(Modifier.size(dotSize).clip(CircleShape).background(if (active) Lime else Muted))
                         Text(
                             (if (tab.isPrivate) "ИНКОГНИТО · " else "") + tab.title.ifBlank { "Новая вкладка" },
                             color = if (tab.isPrivate) Lime else if (active) White else Muted,
                             fontSize = if (compact) 10.sp else 11.sp,
                             maxLines = 1,
-                            modifier = Modifier.weight(1f).padding(start = 7.dp)
+                            modifier = Modifier.weight(1f).padding(start = if (compact) 5.dp else 7.dp)
                         )
                         IconButton(
                             enabled = !isClosing,
@@ -142,14 +147,14 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
                                         closingTabIds.remove(tab.id)
                                     } else {
                                         scope.launch {
-                                            delay(230L)
+                                            delay(250L)
                                             onClose(tab)
                                             closingTabIds.remove(tab.id)
                                         }
                                     }
                                 }
                             },
-                            modifier = Modifier.size(if (compact) 19.dp else 22.dp)
+                            modifier = Modifier.size(closeSize)
                         ) {
                             Icon(Icons.Filled.Close, "Закрыть вкладку", tint = Muted, modifier = Modifier.size(if (compact) 11.dp else 13.dp))
                         }
@@ -159,7 +164,6 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
         }
     }
 }
-
 @Composable
 fun AddressBar(
     value: String,
@@ -344,35 +348,38 @@ fun BottomToolbar(
     compact: Boolean = false,
     reducedMotion: Boolean = false
 ) {
+    val duration = if (reducedMotion) 0 else 300
+    val verticalPadding by animateDpAsState(if (compact) 2.dp else 8.dp, tween(duration), label = "toolbarVerticalPadding")
+    val horizontalPadding by animateDpAsState(if (compact) 12.dp else 22.dp, tween(duration), label = "toolbarHorizontalPadding")
+    val buttonSize by animateDpAsState(if (compact) 36.dp else 50.dp, tween(duration), label = "toolbarButtonSize")
+    val iconSize by animateDpAsState(if (compact) 18.dp else 25.dp, tween(duration), label = "toolbarIconSize")
+    val badgeSize by animateDpAsState(if (compact) 12.dp else 17.dp, tween(duration), label = "toolbarBadgeSize")
+
     Row(
         Modifier.fillMaxWidth()
-            .animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
             .background(Color(0xFF0B100B))
             .border(1.dp, PanelSoft)
-            .padding(horizontal = if (compact) 14.dp else 22.dp, vertical = if (compact) 3.dp else 7.dp),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding)
+            .animateContentSize(tween(duration)),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         ToolbarButton(Icons.Filled.ArrowBack, "Назад", canBack, onBack, compact = compact, reducedMotion = reducedMotion)
         ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward, compact = compact, reducedMotion = reducedMotion)
         ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true, compact = compact, reducedMotion = reducedMotion)
-        IconButton(
-            onClick = onTabs,
-            modifier = Modifier.animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
-                .size(if (compact) 40.dp else 48.dp)
-        ) {
-            Box(Modifier.size(if (compact) 21.dp else 24.dp), contentAlignment = Alignment.Center) {
+        IconButton(onClick = onTabs, modifier = Modifier.size(buttonSize)) {
+            Box(Modifier.size(iconSize), contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.fillMaxSize())
                 Box(
                     Modifier.align(Alignment.BottomEnd)
                         .offset(x = 5.dp, y = 5.dp)
-                        .size(if (compact) 14.dp else 17.dp)
+                        .size(badgeSize)
                         .clip(CircleShape)
                         .background(Lime)
                         .border(1.5.dp, Color(0xFF0B100B), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(tabCount.toString(), color = Background, fontSize = if (compact) 7.sp else 8.sp, fontWeight = FontWeight.Bold)
+                    Text(tabCount.toString(), color = Background, fontSize = if (compact) 6.sp else 8.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -389,20 +396,17 @@ fun ToolbarButton(
     compact: Boolean = false,
     reducedMotion: Boolean = false
 ) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
-            .size(if (compact) 40.dp else 48.dp)
-    ) {
+    val duration = if (reducedMotion) 0 else 300
+    val buttonSize by animateDpAsState(if (compact) 36.dp else 50.dp, tween(duration), label = "toolbarActionSize")
+    val iconSize by animateDpAsState(if (compact) 18.dp else 25.dp, tween(duration), label = "toolbarActionIconSize")
+    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(buttonSize)) {
         Icon(icon, description, tint = when {
             highlighted -> Lime
             enabled -> White
             else -> Color(0xFF455045)
-        }, modifier = Modifier.size(if (compact) 20.dp else 24.dp))
+        }, modifier = Modifier.size(iconSize))
     }
 }
-
 @Composable
 fun MenuRow(title: String, subtitle: String, onClick: () -> Unit) {
     val icon = when {
