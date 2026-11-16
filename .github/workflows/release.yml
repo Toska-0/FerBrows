@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FERBROWS_VERSION_CODE: ${{ github.run_number }}
-      FERBROWS_VERSION_NAME: ${{ inputs.version }}
+      FERBROWS_VERSION_NAME: ${{ inputs.version || '1.0.0' }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -89,14 +89,14 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
+          tag_name: v${{ inputs.version || '1.0.0' }}
           target_commitish: main
-          name: FerBrows ${{ inputs.version }}
+          name: 1.0.0
           draft: false
           prerelease: false
           generate_release_notes: false
           body: |
-            # FerBrows ${{ inputs.version }} — первый стабильный релиз
+            # FerBrows 1.0.0 — первый стабильный релиз
 
             Лёгкий Android-браузер от Toska Game Studio с акцентом на удобство, контроль над данными и персонализацию.
 
