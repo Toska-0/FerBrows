@@ -42,7 +42,7 @@ fun BrowserSettingsDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)
     ) {
-        Surface(Modifier.fillMaxSize(), color = Background) {
+        Surface(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), color = Background) {
             Column(Modifier.fillMaxSize()) {
                 Row(
                     Modifier.fillMaxWidth().padding(start = 8.dp, end = 18.dp, top = 5.dp, bottom = 10.dp),
