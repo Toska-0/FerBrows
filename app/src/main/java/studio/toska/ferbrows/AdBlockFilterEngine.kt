@@ -184,6 +184,7 @@ internal object AdBlockFilterEngine {
         val host = uri.host?.lowercase(Locale.ROOT) ?: return false
         val pageHost = runCatching { Uri.parse(pageUrl).host?.lowercase(Locale.ROOT) }.getOrNull().orEmpty()
         val type = resourceType(accept)
+        if (type == "image" && isLikelyAdImage(requestUrl)) return true
         val thirdParty = pageHost.isNotEmpty() && !isSameSite(host, pageHost)
         var exceptionMatched = false
         var blockMatched = false
@@ -207,13 +208,23 @@ internal object AdBlockFilterEngine {
     fun cosmeticScript(pageUrl: String?, level: AdBlockLevel): String? {
         if (level == AdBlockLevel.LOW || pageUrl.isNullOrBlank()) return null
         val host = runCatching { Uri.parse(pageUrl).host?.lowercase(Locale.ROOT) }.getOrNull() ?: return null
-        val selectors = cosmeticRules.asSequence()
+        val selectors = (cosmeticRules.asSequence()
             .filter { it.domains.isEmpty() || it.domains.any { domain -> domainMatches(host, domain) } }
-            .map { it.selector }.distinct().take(600).toList()
+            .map { it.selector }
+            .filterNot { selector -> listOf(":has-text(", ":matches-css(", ":xpath(", ":remove(", ":upward(", ":contains(").any(selector::contains) }
+            .take(580).toList() +
+            listOf("img[src*='/banners/']", "img[src*='advertising_ads_banner']", "img[src*='/ads/']", "iframe[src*='/ads/']"))
+            .distinct()
         if (selectors.isEmpty()) return null
         val css = selectors.joinToString(",") { it.replace("</style", "<\\/style", ignoreCase = true) }
         val escaped = css.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ")
         return """(function(){try{var s='\${escaped}';var id='ferbrows-filter-css';var add=function(){var old=document.getElementById(id);if(old)return;var st=document.createElement('style');st.id=id;st.textContent=s+'{display:none!important;visibility:hidden!important;max-height:0!important;min-height:0!important;overflow:hidden!important}';(document.head||document.documentElement).appendChild(st);};add();if(!window.__ferBrowsCosmetic){window.__ferBrowsCosmetic=1;new MutationObserver(function(){add();}).observe(document.documentElement,{childList:true,subtree:true});}}catch(e){}})();"""
+    }
+
+    private fun isLikelyAdImage(url: String): Boolean {
+        val path = runCatching { Uri.parse(url).encodedPath.orEmpty().lowercase(Locale.ROOT) }.getOrDefault("")
+        return path.contains("/banners/") || path.contains("advertising_ads_banner") ||
+            path.contains("/ads/") || path.contains("/ad/") || path.contains("/advert/")
     }
 
     private fun isSameSite(first: String, second: String): Boolean =
