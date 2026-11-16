@@ -57,6 +57,20 @@ gradle --no-daemon assembleRelease
 
 The debug APK is created at `app/build/outputs/apk/debug/app-debug.apk`. Release signing is enabled when the repository has the protected secrets `FERBROWS_KEYSTORE_BASE64`, `FERBROWS_KEYSTORE_PASSWORD`, `FERBROWS_KEY_ALIAS` and `FERBROWS_KEY_PASSWORD`; without them CI produces an unsigned release APK.
 
+## Updating without uninstalling
+
+FerBrows keeps the same Android application ID (`studio.toska.ferbrows)); updates must be installed over the existing app. **Do not uninstall FerBrows to update it** — uninstalling deletes its private app data.
+
+Android accepts an APK update only when its package ID matches, its `versionCode` is higher, and its signing certificate matches the installed build. Debug APKs and release APKs are signed with different keys. A release APK built without the configured signing secrets is unsigned and cannot update an already installed signed copy.
+
+For repeatable release updates, configure these GitHub Actions repository secrets once:
+- `FERBROWS_KEYSTORE_BASE64`: base64-encoded private release keystore.
+- `FERBROWS_KEYSTORE_PASSWORD`
+- `FERBROWS_KEY_ALIAS`
+- `FERBROWS_KEY_PASSWORD`
+
+Keep a secure offline backup of the keystore. Losing it prevents signing future compatible updates. Install the same signed release channel each time; do not switch between debug and release APKs. The in-app **Проверить обновления** menu item opens the project's GitHub Releases page.
+
 ## Continuous integration
 
 GitHub Actions runs unit tests and builds debug and release APK variants on pushes and pull requests to `main`. It also supports manual runs. Download the `FerBrows-android-apks` artifact from a successful workflow run.
