@@ -579,7 +579,7 @@ private fun FerBrowsApp() {
                     }
                     if (activeTabId == tabId) { canBack = view?.canGoBack() == true; canForward = view?.canGoForward() == true; loading = false }
                     if (url != "about:blank") {
-                        if (!privatePage) {
+                        if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) {
                             val origin = CredentialVault.originOf(url.orEmpty())
                             val saved = origin?.let { credentialVault.forOrigin(it) }
                             view?.evaluateJavascript(credentialAutofillScript(saved), null)
