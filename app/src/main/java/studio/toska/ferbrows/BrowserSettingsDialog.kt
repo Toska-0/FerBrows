@@ -1,5 +1,6 @@
 package studio.toska.ferbrows
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -138,7 +139,7 @@ fun BrowserSettingsDialog(
 
 @Composable
 private fun SettingsGroup(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, content: @Composable ColumnScope.() -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+    Column(Modifier.animateContentSize(), verticalArrangement = Arrangement.spacedBy(9.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(28.dp).clip(CircleShape).background(Lime.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
                 Icon(icon, null, tint = Lime, modifier = Modifier.size(16.dp))
@@ -146,7 +147,7 @@ private fun SettingsGroup(title: String, icon: androidx.compose.ui.graphics.vect
             Text(title, color = Lime, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp, modifier = Modifier.padding(start = 9.dp))
         }
         Surface(color = Panel, shape = RoundedCornerShape(18.dp)) {
-            Column(Modifier.padding(horizontal = 15.dp, vertical = 5.dp), content = content)
+            Column(Modifier.animateContentSize().padding(horizontal = 15.dp, vertical = 5.dp), content = content)
         }
     }
 }
