@@ -213,7 +213,7 @@ internal object AdBlockFilterEngine {
         val selectors = (cosmeticRules.asSequence()
             .filter { it.domains.isEmpty() || it.domains.any { domain -> domainMatches(host, domain) } }
             .map { it.selector }
-            .filterNot { selector -> listOf(":has-text(", ":matches-css(", ":xpath(", ":remove(", ":upward(", ":contains(").any(selector::contains) }
+            .filterNot { selector -> listOf(":has-text(", ":matches-css(", ":xpath(", ":remove(", ":upward(", ":contains(").any { unsupported -> selector.contains(unsupported) } }
             .take(580).toList() +
             listOf("img[src*='/banners/']", "img[src*='advertising_ads_banner']", "img[src*='/ads/']", "iframe[src*='/ads/']"))
             .distinct()
