@@ -234,8 +234,9 @@ private fun FerBrowsApp() {
     var browserSettings by remember { mutableStateOf(settingsStore.load()) }
     val systemDarkTheme = isSystemInDarkTheme()
     val darkTheme = when (browserSettings.theme) { BrowserTheme.DARK -> true; BrowserTheme.LIGHT -> false; BrowserTheme.SYSTEM -> systemDarkTheme }
-    val accentColor = remember(browserSettings.accentColor) {
-        runCatching { Color(android.graphics.Color.parseColor(browserSettings.accentColor)) }
+    val accentColor = remember(browserSettings.accentColor, darkTheme) {
+        if (!darkTheme && browserSettings.accentColor.equals("#C6FF1A", ignoreCase = true)) Color(0xFF557F00)
+        else runCatching { Color(android.graphics.Color.parseColor(browserSettings.accentColor)) }
             .getOrDefault(Color(0xFFC6FF1A))
     }
     val trackerProtectionEnabled = remember { AtomicBoolean(browserSettings.trackerProtectionEnabled) }
@@ -390,7 +391,7 @@ private fun FerBrowsApp() {
             settings.setSupportMultipleWindows(false)
             android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) settings.safeBrowsingEnabled = true
-            setBackgroundColor(android.graphics.Color.rgb(5, 7, 5))
+            setBackgroundColor(if (darkTheme) android.graphics.Color.rgb(5, 7, 5) else android.graphics.Color.rgb(245, 247, 245))
             var gestureDownX = 0f
             var gestureDownY = 0f
             setOnTouchListener { touchedView, event ->
