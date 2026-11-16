@@ -166,6 +166,7 @@ private fun FerBrowsApp() {
     var networkOnline by remember { mutableStateOf(hasValidatedInternet(context)) }
     var countryName by remember { mutableStateOf("Определение…") }
     var countryFlag by remember { mutableStateOf("🌐") }
+    var countryRefreshToken by remember { mutableIntStateOf(0) }
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
     var tabDialog by remember { mutableStateOf(false) }
@@ -208,13 +209,16 @@ private fun FerBrowsApp() {
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 networkOnline = hasValidatedInternet(context)
+                countryRefreshToken++
             }
             override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
                 networkOnline = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                     capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                countryRefreshToken++
             }
             override fun onLost(network: Network) {
                 networkOnline = hasValidatedInternet(context)
+                countryRefreshToken++
             }
         }
         runCatching { connectivityManager.registerDefaultNetworkCallback(callback) }
@@ -562,7 +566,8 @@ private fun FerBrowsApp() {
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(countryRefreshToken) {
+        delay(500)
         val country = withContext(Dispatchers.IO) { FerBrowsNetworkInfo.lookupCountry() }
         if (country != null) {
             countryName = country.name
@@ -571,6 +576,9 @@ private fun FerBrowsApp() {
             countryName = "Не определена"
             countryFlag = "🌐"
         }
+    }
+
+    LaunchedEffect(Unit) {
         val installedVersion = runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0.0.0"
         }.getOrDefault("0.0.0")
