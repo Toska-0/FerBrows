@@ -20,6 +20,7 @@ import android.provider.MediaStore
 import android.widget.Toast
 import java.io.ByteArrayInputStream
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -248,6 +249,14 @@ private fun FerBrowsApp() {
             .getOrDefault(Color(0xFFC6FF1A))
     }
     val trackerProtectionEnabled = remember { AtomicBoolean(browserSettings.trackerProtectionEnabled) }
+    val adBlockLevel = remember { AtomicReference(browserSettings.adBlockLevel) }
+    val browserFieldColors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+        focusedTextColor = White, unfocusedTextColor = White,
+        focusedLabelColor = Lime, unfocusedLabelColor = Muted,
+        focusedPlaceholderColor = Muted, unfocusedPlaceholderColor = Muted,
+        cursorColor = Lime, focusedBorderColor = Lime, unfocusedBorderColor = PanelSoft,
+        containerColor = Panel
+    )
     val store = remember { BrowserStore(context) }
     val connectivityManager = remember { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
     DisposableEffect(connectivityManager) {
@@ -527,7 +536,8 @@ private fun FerBrowsApp() {
             }
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
-                    if (trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(request?.url?.host)) {
+                    if ((trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(request?.url?.host)) ||
+                        AdBlocker.shouldBlock(request?.url?.host, adBlockLevel.get())) {
                         return android.webkit.WebResourceResponse(
                             "text/plain", "UTF-8", 204, "Blocked by FerBrows tracker protection",
                             emptyMap(), ByteArrayInputStream(ByteArray(0))
@@ -1372,6 +1382,7 @@ private fun FerBrowsApp() {
             onSave = { updated ->
                 browserSettings = updated
                 trackerProtectionEnabled.set(updated.trackerProtectionEnabled)
+                adBlockLevel.set(updated.adBlockLevel)
                 settingsStore.save(updated)
                 AppCompatDelegate.setDefaultNightMode(when (updated.theme) {
                     BrowserTheme.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
