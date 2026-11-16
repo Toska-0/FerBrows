@@ -2,6 +2,10 @@ package studio.toska.ferbrows
 
 import android.content.Context
 
+enum class BrowserTheme(val label: String) {
+    SYSTEM("Как в системе"), LIGHT("Светлая"), DARK("Тёмная")
+}
+
 enum class SearchEngine(val label: String, val template: String) {
     GOOGLE("Google", "https://www.google.com/search?q=%s"),
     DUCKDUCKGO("DuckDuckGo", "https://duckduckgo.com/?q=%s"),
@@ -16,7 +20,8 @@ data class BrowserSettings(
     val reducedMotion: Boolean = false,
     val compactInterface: Boolean = false,
     val swipeNavigationEnabled: Boolean = true,
-    val accentColor: String = "#C6FF1A"
+    val accentColor: String = "#C6FF1A",
+    val theme: BrowserTheme = BrowserTheme.DARK
 )
 
 class BrowserSettingsStore(context: Context) {
@@ -32,7 +37,8 @@ class BrowserSettingsStore(context: Context) {
         reducedMotion = prefs.getBoolean("reduced_motion", false),
         compactInterface = prefs.getBoolean("compact_interface", false),
         swipeNavigationEnabled = prefs.getBoolean("swipe_navigation_enabled", true),
-        accentColor = prefs.getString("accent_color", "#C6FF1A") ?: "#C6FF1A"
+        accentColor = prefs.getString("accent_color", "#C6FF1A") ?: "#C6FF1A",
+        theme = runCatching { BrowserTheme.valueOf(prefs.getString("browser_theme", BrowserTheme.DARK.name)!!) }.getOrDefault(BrowserTheme.DARK)
     )
 
     fun save(settings: BrowserSettings) {
@@ -45,6 +51,7 @@ class BrowserSettingsStore(context: Context) {
             .putBoolean("compact_interface", settings.compactInterface)
             .putBoolean("swipe_navigation_enabled", settings.swipeNavigationEnabled)
             .putString("accent_color", settings.accentColor)
+            .putString("browser_theme", settings.theme.name)
             .apply()
     }
 }
