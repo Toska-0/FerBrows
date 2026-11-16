@@ -19,7 +19,7 @@ FerBrows is an Android browser prototype with a dark AMOLED interface and lime a
 - Private tabs backed by AndroidX WebKit multi-profile when supported.
 - Optional blocking of a small built-in list of known advertising and analytics hosts.
 - Safe Browsing where supported by the installed WebView provider.
-- JavaScript, homepage, search provider, tracker protection, reduced-motion, compact-interface, swipe navigation and five accent-color settings. Personalization is available from the three-dot menu. Site camera/microphone and geolocation requests are denied by default.
+- JavaScript, homepage, search provider and tracker protection controls. Dedicated privacy and personalization screens are available from the three-dot menu; personalization includes reduced motion, compact chrome, edge-swipe navigation and five accent colors. Site camera/microphone and geolocation requests are denied by default.
 - Controls to clear history, WebView cache, cookies and website storage.
 
 ## Private browsing
