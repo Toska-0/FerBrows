@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Parcel
 import android.util.Base64
 import android.content.Intent
+import android.content.ContentValues
 import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.Network
@@ -15,6 +16,7 @@ import android.net.NetworkCapabilities
 import android.app.DownloadManager
 import android.content.Context
 import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
 import java.io.ByteArrayInputStream
 import java.util.concurrent.atomic.AtomicBoolean
@@ -119,6 +121,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import java.net.URLEncoder
 import kotlinx.coroutines.delay
+import org.json.JSONArray
 
 internal val Background = Color(0xFF050705)
 internal val Panel = Color(0xFF111811)
@@ -201,6 +204,36 @@ private fun FerBrowsApp() {
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         pendingFileCallback.value?.onReceiveValue(uri?.let { arrayOf(it) })
         pendingFileCallback.value = null
+    }
+    val exportBookmarksLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) runCatching {
+            val json = JSONArray(bookmarks.toList()).toString(2)
+            context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(json) }
+                ?: error("Не удалось открыть файл для записи")
+            Toast.makeText(context, "Закладки экспортированы", Toast.LENGTH_SHORT).show()
+        }.onFailure {
+            Toast.makeText(context, "Не удалось экспортировать закладки", Toast.LENGTH_LONG).show()
+        }
+    }
+    val importBookmarksLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) runCatching {
+            val raw = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                ?: error("Не удалось прочитать файл")
+            val json = JSONArray(raw)
+            val imported = (0 until json.length()).mapNotNull { index ->
+                val value = json.optString(index)
+                BrowserNavigation.resolveInput(value)?.takeIf {
+                    it.startsWith("https://", true) || it.startsWith("http://", true)
+                }
+            }
+            val merged = (bookmarks.toList() + imported).distinct()
+            bookmarks.clear()
+            bookmarks.addAll(merged)
+            persistBookmarks()
+            Toast.makeText(context, "Импортировано закладок: ${merged.size}", Toast.LENGTH_SHORT).show()
+        }.onFailure {
+            Toast.makeText(context, "Файл закладок повреждён или имеет неверный формат", Toast.LENGTH_LONG).show()
+        }
     }
     fun persistTabs() = store.saveTabs(tabs.toList(), activeTabId, nextTabId)
     fun persistBookmarks() = store.saveBookmarks(bookmarks.toList())
@@ -570,6 +603,39 @@ private fun FerBrowsApp() {
         loading = false; progress = 0; pageError = null
     }
 
+    fun savePageScreenshot() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            Toast.makeText(context, "Сохранение снимка в галерею требует Android 10 или новее", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (webView.width <= 0 || webView.height <= 0) {
+            Toast.makeText(context, "Страница ещё не готова для снимка", Toast.LENGTH_SHORT).show()
+            return
+        }
+        runCatching {
+            val bitmap = Bitmap.createBitmap(webView.width, webView.height, Bitmap.Config.ARGB_8888)
+            webView.draw(Canvas(bitmap))
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, "FerBrows_${System.currentTimeMillis()}.png")
+                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/FerBrows")
+            }
+            val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                ?: error("Не удалось создать файл снимка")
+            val saved = context.contentResolver.openOutputStream(uri)?.use {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            } ?: false
+            bitmap.recycle()
+            if (!saved) {
+                context.contentResolver.delete(uri, null, null)
+                error("Не удалось записать изображение")
+            }
+            Toast.makeText(context, "Снимок сохранён в Pictures/FerBrows", Toast.LENGTH_LONG).show()
+        }.onFailure {
+            Toast.makeText(context, "Не удалось сохранить снимок страницы", Toast.LENGTH_LONG).show()
+        }
+    }
+
     fun addPrivateTab() {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
             Toast.makeText(context, "Приватный профиль не поддерживается текущим WebView", Toast.LENGTH_LONG).show()
@@ -754,6 +820,27 @@ private fun FerBrowsApp() {
                         downloads = downloadsStore.query()
                         showDownloads = true
                         menuDialog = false
+                    }
+                    MenuRow("Импорт закладок", "Добавить сайты из JSON-файла") {
+                        menuDialog = false
+                        importBookmarksLauncher.launch(arrayOf("application/json", "text/*"))
+                    }
+                    MenuRow("Экспорт закладок", "Сохранить закладки в JSON-файл") {
+                        menuDialog = false
+                        exportBookmarksLauncher.launch("FerBrows-bookmarks.json")
+                    }
+                    MenuRow("Снимок страницы", "Сохранить открытую страницу в галерею") {
+                        menuDialog = false
+                        savePageScreenshot()
+                    }
+                    MenuRow("Перевести страницу", "Открыть перевод текущего сайта на русский") {
+                        menuDialog = false
+                        if (currentUrl.startsWith("http")) {
+                            val source = URLEncoder.encode(currentUrl, "UTF-8")
+                            navigate("https://translate.google.com/translate?sl=auto&tl=ru&u=$source")
+                        } else {
+                            Toast.makeText(context, "Сначала открой сайт для перевода", Toast.LENGTH_SHORT).show()
+                        }
                     }
                     MenuRow("Персонализация", "Компактный интерфейс и анимации") {
                         personalizationOnly = true
