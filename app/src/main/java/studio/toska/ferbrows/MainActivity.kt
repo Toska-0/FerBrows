@@ -365,7 +365,7 @@ private fun FerBrowsApp() {
                             val actualOrigin = CredentialVault.originOf(credentialWebView.url.orEmpty())
                             val username = message.optString("username")
                             val password = message.optString("password")
-                            if (origin != actualOrigin || username.isBlank() || password.isBlank()) return
+                            if (origin != actualOrigin || !origin.startsWith("https://") || username.isBlank() || password.isBlank()) return
                             android.os.Handler(android.os.Looper.getMainLooper()).post {
                                 if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) {
                                     pendingCredential = SavedCredential(origin, username, password, System.currentTimeMillis())
