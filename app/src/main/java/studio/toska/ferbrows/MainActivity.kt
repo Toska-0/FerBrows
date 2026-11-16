@@ -709,6 +709,22 @@ private fun FerBrowsApp() {
     }
     fun switchTo(tab: BrowserTab) {
         if (tab.id == activeTabId) return
+        if (browserSettings.reducedMotion) {
+            tabTransitionJob.value?.cancel()
+            tabTransition.snapTo(0f)
+            val state = BrowserTabReducer.select(BrowserTabsState(tabs.toList(), activeTabId, nextTabId), tab.id)
+            activeTabId = state.activeTabId
+            homeVisibleTabId = if (tab.url.isBlank()) tab.id else -1
+            persistTabs()
+            updateTab(tab.url, tab.title)
+            val selected = webViews[tab.id]
+            canBack = selected?.canGoBack() == true
+            canForward = selected?.canGoForward() == true
+            loading = false
+            progress = 0
+            pageError = null
+            return
+        }
         tabTransitionJob.value?.cancel()
         tabTransitionJob.value = tabTransitionScope.launch {
             // Cover the web-content area before swapping WebViews. This avoids exposing
