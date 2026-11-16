@@ -991,6 +991,10 @@ private fun FerBrowsApp() {
                 downloadsStore.remove(id)
                 downloads = downloadsStore.query()
             },
+            onClearCompleted = {
+                downloadsStore.clearCompleted()
+                downloads = downloadsStore.query()
+            },
             onDismiss = { showDownloads = false }
         )
     }
