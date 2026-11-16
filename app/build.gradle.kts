@@ -32,7 +32,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // CI passes a monotonically increasing versionCode for every build.
         versionCode = providers.gradleProperty("versionCode").orElse("4").get().toInt()
-        versionName = providers.gradleProperty("versionName").orElse("0.3.1").get()
+        versionName = providers.gradleProperty("versionName").orElse("1.0.0").get()
     }
 
     buildTypes {
