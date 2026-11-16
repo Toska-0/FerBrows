@@ -1019,7 +1019,7 @@ private fun FerBrowsApp() {
                         showHistory = true
                         menuDialog = false
                     }
-                    MenuRow("Сохранённые пароли", "Управление логинами и автозаполнением") {
+                    MenuRow("Сохранённые пароли", "Логины, пароли и личные заметки") {
                         showCredentials = true
                         menuDialog = false
                     }
