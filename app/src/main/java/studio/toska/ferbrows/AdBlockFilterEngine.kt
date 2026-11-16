@@ -16,6 +16,10 @@ internal object AdBlockFilterEngine {
     private const val UPDATED_KEY = "last_updated"
     private const val UPDATE_INTERVAL_MS = 24L * 60L * 60L * 1000L
     private const val MAX_FILTER_BYTES = 8 * 1024 * 1024
+    // Keep the in-memory rule set bounded on low-memory Android devices.
+    private const val MAX_NETWORK_RULES = 10_000
+    private const val MAX_GENERIC_RULES = 900
+    private const val MAX_COSMETIC_RULES = 1_000
     private val initialized = AtomicBoolean(false)
     @Volatile private var networkRules: List<NetworkRule> = emptyList()
     @Volatile private var hostRules: Map<String, List<NetworkRule>> = emptyMap()
@@ -103,9 +107,11 @@ internal object AdBlockFilterEngine {
     private fun parseLists(raw: String) {
         val networks = ArrayList<NetworkRule>(12_000)
         val cosmetics = ArrayList<CosmeticRule>(4_000)
-        raw.lineSequence().forEach { original ->
+        var genericCount = 0
+        for (original in raw.lineSequence()) {
+            if (networks.size >= MAX_NETWORK_RULES && cosmetics.size >= MAX_COSMETIC_RULES) break
             val line = original.trim()
-            if (line.isEmpty() || line.startsWith("!") || line.startsWith("[") || line.length > 2_000) return@forEach
+            if (line.isEmpty() || line.startsWith("!") || line.startsWith("[") || line.length > 2_000) continue
             val marker = when {
                 "##" in line -> "##"
                 "#@#" in line -> "#@#"
@@ -115,15 +121,25 @@ internal object AdBlockFilterEngine {
                 if (marker == "##") {
                     val split = line.split("##", limit = 2)
                     val selector = split.getOrNull(1)?.trim().orEmpty()
-                    if (selector.isNotEmpty() && selector.length <= 500 && "{" !in selector && "}" !in selector) {
+                    if (cosmetics.size < MAX_COSMETIC_RULES && selector.isNotEmpty() && selector.length <= 500 && "{" !in selector && "}" !in selector) {
                         val domains = split[0].split(',').mapNotNull { it.trim().lowercase(Locale.ROOT).takeIf(String::isNotEmpty) }.toSet()
                         cosmetics.add(CosmeticRule(domains, selector))
                     }
                 }
-                return@forEach
+                continue
             }
-            if (line.startsWith("@@")) parseNetworkRule(line.removePrefix("@@"), true)?.let(networks::add)
-            else if (!line.startsWith("/") && !line.startsWith("#")) parseNetworkRule(line, false)?.let(networks::add)
+            if (networks.size >= MAX_NETWORK_RULES) continue
+            val parsed = if (line.startsWith("@@")) parseNetworkRule(line.removePrefix("@@"), true)
+                else if (!line.startsWith("/") && !line.startsWith("#")) parseNetworkRule(line, false)
+                else null
+            if (parsed != null) {
+                if (parsed.hostSuffix == null) {
+                    if (genericCount < MAX_GENERIC_RULES) {
+                        networks.add(parsed)
+                        genericCount++
+                    }
+                } else networks.add(parsed)
+            }
         }
         networkRules = networks
         hostRules = networks.filter { it.hostSuffix != null }.groupBy { it.hostSuffix!! }
@@ -241,7 +257,7 @@ internal object AdBlockFilterEngine {
             .filter { it.domains.isEmpty() || it.domains.any { domain -> domainMatches(host, domain) } }
             .map { it.selector }
             .filterNot { selector -> listOf(":has-text(", ":matches-css(", ":xpath(", ":remove(", ":upward(", ":contains(").any { unsupported -> selector.contains(unsupported) } }
-            .take(580).toList() +
+            .take(120).toList() +
             listOf("img[src*='/banners/']", "img[src*='advertising_ads_banner']", "img[src*='/ads/']", "iframe[src*='/ads/']"))
             .distinct()
         if (selectors.isEmpty()) return null
