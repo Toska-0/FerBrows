@@ -42,7 +42,7 @@ fun DownloadsDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (downloads.any { it.status == DownloadManager.STATUS_SUCCESSFUL || it.status == DownloadManager.STATUS_FAILED }) {
-                    TextButton(onClick = onClearCompleted) { Text("Очистить завершённые", color = Muted, fontSize = 11.sp) }
+                    TextButton(onClick = onClearCompleted) { Text("Удалить завершённые файлы", color = Muted, fontSize = 11.sp) }
                 }
                 if (downloads.isEmpty()) Text("Загрузок пока нет", color = Muted)
                 downloads.forEach { item ->
