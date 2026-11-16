@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandHorizontally
@@ -49,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, networkOnline: Boolean = true, compact: Boolean = false) {
+fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, countryName: String = "Определение…", countryFlag: String = "🌐", compact: Boolean = false) {
     Row(
         modifier = Modifier.fillMaxWidth().animateContentSize().height(if (compact) 42.dp else 52.dp).padding(start = if (compact) 10.dp else 16.dp, end = 6.dp, top = if (compact) 0.dp else 4.dp, bottom = if (compact) 0.dp else 3.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -63,11 +64,14 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, network
                     Text("FerBrows", color = White, fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
                     Text("FAST · SIMPLE · YOURS", color = Muted, fontSize = 7.sp, letterSpacing = 1.2.sp)
                 }
-                Box(
-                    Modifier.clip(RoundedCornerShape(20.dp)).background(if (networkOnline) Green.copy(alpha = 0.10f) else Color(0xFFFFB454).copy(alpha = 0.12f))
-                        .padding(horizontal = 7.dp, vertical = 4.dp)
+                Row(
+                    Modifier.clip(RoundedCornerShape(20.dp)).background(PanelSoft.copy(alpha = 0.72f))
+                        .padding(horizontal = 9.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    Text(if (networkOnline) "ONLINE" else "ОФЛАЙН", color = if (networkOnline) Green else Color(0xFFFFB454), fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
+                    Text(countryFlag, fontSize = 13.sp)
+                    Text(countryName, color = White, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 }
                 Spacer(Modifier.width(4.dp))
             }
@@ -110,6 +114,9 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
             key(tab.id) {
                 val active = tab.id == activeId
                 val isClosing = tab.id in closingTabIds
+                val tabBackground by animateColorAsState(if (active) PanelSoft else Color(0xFF0A0E0A), tween(if (reducedMotion) 0 else 240), label = "tabBackground")
+                val tabBorder by animateColorAsState(if (active) Lime.copy(alpha = 0.52f) else Color(0xFF1B241B), tween(if (reducedMotion) 0 else 240), label = "tabBorder")
+                val tabDot by animateColorAsState(if (active) Lime else Muted, tween(if (reducedMotion) 0 else 240), label = "tabDot")
                 AnimatedVisibility(
                     visible = !isClosing,
                     enter = if (reducedMotion) EnterTransition.None else fadeIn(tween(140)),
@@ -121,13 +128,13 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
                         modifier = Modifier.width(tabWidth)
                             .animateContentSize(tween(if (reducedMotion) 0 else 320))
                             .clip(RoundedCornerShape(if (compact) 9.dp else 13.dp))
-                            .background(if (active) PanelSoft else Color(0xFF0A0E0A))
-                            .border(1.dp, if (active) Lime.copy(alpha = 0.42f) else Color(0xFF1B241B), RoundedCornerShape(if (compact) 9.dp else 13.dp))
+                            .background(tabBackground)
+                            .border(1.dp, tabBorder, RoundedCornerShape(if (compact) 9.dp else 13.dp))
                             .clickable(enabled = !isClosing) { onSelect(tab) }
                             .padding(start = contentStart, end = 2.dp, top = contentTop, bottom = contentTop),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(Modifier.size(dotSize).clip(CircleShape).background(if (active) Lime else Muted))
+                        Box(Modifier.size(dotSize).clip(CircleShape).background(tabDot))
                         Text(
                             (if (tab.isPrivate) "ИНКОГНИТО · " else "") + tab.title.ifBlank { "Новая вкладка" },
                             color = if (tab.isPrivate) Lime else if (active) White else Muted,
