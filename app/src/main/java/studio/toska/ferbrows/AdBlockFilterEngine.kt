@@ -18,6 +18,8 @@ internal object AdBlockFilterEngine {
     private const val MAX_FILTER_BYTES = 8 * 1024 * 1024
     private val initialized = AtomicBoolean(false)
     @Volatile private var networkRules: List<NetworkRule> = emptyList()
+    @Volatile private var hostRules: Map<String, List<NetworkRule>> = emptyMap()
+    @Volatile private var genericRules: List<NetworkRule> = emptyList()
     @Volatile private var cosmeticRules: List<CosmeticRule> = emptyList()
     @Volatile private var updating = false
 
@@ -124,6 +126,8 @@ internal object AdBlockFilterEngine {
             else if (!line.startsWith("/") && !line.startsWith("#")) parseNetworkRule(line, false)?.let(networks::add)
         }
         networkRules = networks
+        hostRules = networks.filter { it.hostSuffix != null }.groupBy { it.hostSuffix!! }
+        genericRules = networks.filter { it.hostSuffix == null }
         cosmeticRules = cosmetics
     }
 
@@ -188,9 +192,18 @@ internal object AdBlockFilterEngine {
         val type = resourceType(accept)
         if (type == "image" && isLikelyAdImage(requestUrl)) return true
         val thirdParty = pageHost.isNotEmpty() && !isSameSite(host, pageHost)
+        val candidates = ArrayList<NetworkRule>(genericRules.size + 16)
+        candidates.addAll(genericRules)
+        var suffix = host
+        while (suffix.isNotEmpty()) {
+            hostRules[suffix]?.let(candidates::addAll)
+            val dot = suffix.indexOf('.')
+            if (dot < 0) break
+            suffix = suffix.substring(dot + 1)
+        }
         var exceptionMatched = false
         var blockMatched = false
-        for (rule in networkRules) {
+        for (rule in candidates) {
             if (rule.includeTypes.isNotEmpty() && type !in rule.includeTypes) continue
             if (type in rule.excludeTypes) continue
             if (rule.thirdParty != null && rule.thirdParty != thirdParty) continue
