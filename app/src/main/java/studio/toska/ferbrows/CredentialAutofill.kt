@@ -100,7 +100,7 @@ internal fun credentialAutofillScript(saved: SavedCredential?): String {
             scheduleOffer();
           } else if (!isExcluded(el) && el.value && !isPassword(el)) {
             const text = identityText(el);
-            if (/email|e-mail|username|login|account|user/i.test(text) ||
+            if (/email|e-mail|identifier|username|login|account|user/i.test(text) ||
                 (el.type || '').toLowerCase() === 'email') {
               lastUsername = el.value.trim();
               try { sessionStorage.setItem(storageKey, lastUsername); } catch (_) {}
@@ -112,7 +112,7 @@ internal fun credentialAutofillScript(saved: SavedCredential?): String {
 
         document.addEventListener('change', event => {
           const el = event.target;
-          if (el instanceof HTMLInputElement && (isPassword(el) || /email|e-mail|username|login|account|user/i.test(identityText(el)))) {
+          if (el instanceof HTMLInputElement && (isPassword(el) || /email|e-mail|identifier|username|login|account|user/i.test(identityText(el)))) {
             scheduleOffer();
           }
         }, true);
