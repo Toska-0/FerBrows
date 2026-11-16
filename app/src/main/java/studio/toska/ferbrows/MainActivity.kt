@@ -158,6 +158,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun FerBrowsApp() {
     val context = LocalContext.current
+    val credentialVault = remember { CredentialVault(context) }
+    var pendingCredential by remember { mutableStateOf<SavedCredential?>(null) }
+    var showCredentials by remember { mutableStateOf(false) }
     var currentUrl by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var pageTitle by remember { mutableStateOf("Новая вкладка") }
@@ -349,6 +352,28 @@ private fun FerBrowsApp() {
             settings.setSupportMultipleWindows(false)
             android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) settings.safeBrowsingEnabled = true
+            val credentialWebView = this
+            if (!isPrivate) {
+                addJavascriptInterface(object {
+                    @android.webkit.JavascriptInterface
+                    fun postMessage(payload: String) {
+                        runCatching {
+                            val message = org.json.JSONObject(payload)
+                            if (message.optString("type") != "save") return
+                            val origin = message.optString("origin")
+                            val actualOrigin = CredentialVault.originOf(credentialWebView.url.orEmpty())
+                            val username = message.optString("username")
+                            val password = message.optString("password")
+                            if (origin != actualOrigin || username.isBlank() || password.isBlank()) return
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) {
+                                    pendingCredential = SavedCredential(origin, username, password, System.currentTimeMillis())
+                                }
+                            }
+                        }
+                    }
+                }, "FerBrowsVault")
+            }
             setBackgroundColor(android.graphics.Color.rgb(5, 7, 5))
             var gestureDownX = 0f
             var gestureDownY = 0f
@@ -553,7 +578,14 @@ private fun FerBrowsApp() {
                         if (activeTabId == tabId) { currentUrl = url; address = url; pageTitle = title; pageError = null }
                     }
                     if (activeTabId == tabId) { canBack = view?.canGoBack() == true; canForward = view?.canGoForward() == true; loading = false }
-                    if (url != "about:blank") persistWebViewState(tabId, view)
+                    if (url != "about:blank") {
+                        if (!privatePage) {
+                            val origin = CredentialVault.originOf(url.orEmpty())
+                            val saved = origin?.let { credentialVault.forOrigin(it) }
+                            view?.evaluateJavascript(credentialAutofillScript(saved), null)
+                        }
+                        persistWebViewState(tabId, view)
+                    }
                 }
             }
         }
@@ -969,6 +1001,10 @@ private fun FerBrowsApp() {
                         showHistory = true
                         menuDialog = false
                     }
+                    MenuRow("Сохранённые пароли", "Управление логинами и автозаполнением") {
+                        showCredentials = true
+                        menuDialog = false
+                    }
                     MenuRow("Новая приватная вкладка", "Отдельный профиль без сохранения истории") {
                         addPrivateTab()
                         menuDialog = false
@@ -1064,6 +1100,68 @@ private fun FerBrowsApp() {
             onDismiss = { showHistory = false },
             onSelect = { url -> showHistory = false; navigate(url) },
             searchable = true
+        )
+    }
+
+    if (pendingCredential != null) {
+        val candidate = pendingCredential!!
+        AlertDialog(
+            onDismissRequest = { pendingCredential = null },
+            containerColor = Panel,
+            title = { Text("Сохранить пароль?", color = White) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(candidate.origin, color = Muted)
+                    Text("Логин: ${candidate.username}", color = White)
+                    Text("Пароль будет сохранён в зашифрованном хранилище устройства.", color = Muted)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    runCatching { credentialVault.save(candidate.origin, candidate.username, candidate.password) }
+                        .onSuccess { Toast.makeText(context, "Пароль сохранён", Toast.LENGTH_SHORT).show() }
+                        .onFailure { Toast.makeText(context, "Не удалось сохранить пароль", Toast.LENGTH_SHORT).show() }
+                    pendingCredential = null
+                }) { Text("Сохранить", color = Lime) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingCredential = null }) { Text("Не сейчас", color = Muted) }
+            }
+        )
+    }
+
+    if (showCredentials) {
+        val credentials = credentialVault.all()
+        AlertDialog(
+            onDismissRequest = { showCredentials = false },
+            containerColor = Panel,
+            title = { Text("Сохранённые пароли", color = White) },
+            text = {
+                if (credentials.isEmpty()) {
+                    Text("Сохранённых учётных записей пока нет.", color = Muted)
+                } else {
+                    Column(
+                        modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        credentials.forEach { credential ->
+                            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(credential.origin, color = White, fontWeight = FontWeight.SemiBold)
+                                Text(credential.username, color = Muted)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    TextButton(onClick = {
+                                        credentialVault.remove(credential.origin, credential.username)
+                                        showCredentials = false
+                                        showCredentials = true
+                                    }) { Text("Удалить", color = Color(0xFFFF7777)) }
+                                }
+                            }
+                            Divider(color = PanelSoft)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showCredentials = false }) { Text("Готово", color = Lime) } }
         )
     }
     
