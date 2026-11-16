@@ -55,7 +55,12 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, country
         modifier = Modifier.fillMaxWidth().animateContentSize().height(if (compact) 42.dp else 52.dp).padding(start = if (compact) 10.dp else 16.dp, end = 6.dp, top = if (compact) 0.dp else 4.dp, bottom = if (compact) 0.dp else 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AnimatedVisibility(visible = !compact, modifier = Modifier.weight(1f), enter = fadeIn(), exit = fadeOut()) {
+        AnimatedVisibility(
+            visible = !compact,
+            modifier = Modifier.weight(1f),
+            enter = fadeIn(tween(220)) + expandHorizontally(animationSpec = tween(320), expandFrom = Alignment.End),
+            exit = fadeOut(tween(150)) + shrinkHorizontally(animationSpec = tween(320), shrinkTowards = Alignment.End)
+        ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(Lime), contentAlignment = Alignment.Center) {
                     Text("F", color = Background, fontSize = 20.sp, fontWeight = FontWeight.Black)
