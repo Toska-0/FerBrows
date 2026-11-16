@@ -18,7 +18,7 @@ jobs:
     env:
       FERBROWS_HAS_RELEASE_KEY: ${{ secrets.FERBROWS_KEYSTORE_BASE64 != '' }}
       FERBROWS_VERSION_CODE: ${{ github.run_number }}
-      FERBROWS_VERSION_NAME: ${{ github.ref_type == 'tag' && github.ref_name || format('0.3.{0}', github.run_number) }}
+      FERBROWS_VERSION_NAME: ${{ github.ref_type == 'tag' && github.ref_name || '1.0.0' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,11 +58,12 @@ jobs:
           FERBROWS_KEY_ALIAS: ${{ secrets.FERBROWS_KEY_ALIAS }}
           FERBROWS_KEY_PASSWORD: ${{ secrets.FERBROWS_KEY_PASSWORD }}
         run: |
+          VERSION_NAME="${FERBROWS_VERSION_NAME#v}"
           if [ "$FERBROWS_HAS_RELEASE_KEY" = "true" ]; then
-            gradle --no-daemon assembleDebug assembleRelease -PversionCode="$FERBROWS_VERSION_CODE" -PversionName="$FERBROWS_VERSION_NAME"
+            gradle --no-daemon assembleDebug assembleRelease -PversionCode="$FERBROWS_VERSION_CODE" -PversionName="$VERSION_NAME"
           else
             echo "::warning::Release signing key is not configured. Building a test-only Debug APK; no updateable Release APK will be published."
-            gradle --no-daemon assembleDebug -PversionCode="$FERBROWS_VERSION_CODE" -PversionName="$FERBROWS_VERSION_NAME"
+            gradle --no-daemon assembleDebug -PversionCode="$FERBROWS_VERSION_CODE" -PversionName="$VERSION_NAME"
           fi
       - name: Upload Debug APK (test channel)
         uses: actions/upload-artifact@v4
@@ -71,19 +72,24 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
-      - name: Verify signed Release APK
+      - name: Prepare universal Release APK
         if: env.FERBROWS_HAS_RELEASE_KEY == 'true'
         run: |
           APK="$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)"
           test -n "$APK"
+          mkdir -p release-assets
+          cp "$APK" release-assets/apk-release-universal.apk
+      - name: Verify signed Release APK
+        if: env.FERBROWS_HAS_RELEASE_KEY == 'true'
+        run: |
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
-          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          "$APKSIGNER" verify --verbose --print-certs release-assets/apk-release-universal.apk
       - name: Upload signed Release APK
         if: env.FERBROWS_HAS_RELEASE_KEY == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: FerBrows-release-update
-          path: app/build/outputs/apk/release/*.apk
+          path: release-assets/apk-release-universal.apk
           if-no-files-found: error
           retention-days: 90
 
@@ -91,6 +97,41 @@ jobs:
         if: github.ref_type == 'tag' && env.FERBROWS_HAS_RELEASE_KEY == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          name: FerBrows ${{ github.ref_name }}
-          generate_release_notes: true
-          files: app/build/outputs/apk/release/*.apk
+          name: FerBrows 1.0.0
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          body: |
+            # FerBrows 1.0.0 — первый стабильный релиз
+
+            Лёгкий Android-браузер от Toska Game Studio с акцентом на удобство, контроль над данными и персонализацию.
+
+            ## Основные возможности
+
+            - **Удобный просмотр сайтов:** несколько вкладок, обзор открытых страниц, группы вкладок, жесты назад/вперёд и восстановление обычных вкладок после перезапуска.
+            - **Персонализация:** тёмная, светлая и системная темы, цветовые акценты, компактный интерфейс и настройка анимаций.
+            - **Закладки и история:** создание и редактирование закладок, импорт и экспорт, поиск и очистка истории.
+            - **Менеджер паролей:** ручное создание защищённых записей с названием, сайтом, логином, паролем и заметкой. Данные шифруются AES-GCM, ключ хранится в Android Keystore.
+            - **Ручное автозаполнение:** сохранённые данные подставляются только при совпадении сайта с адресом записи. Браузер не перехватывает формы и не предлагает автоматически сохранять пароли.
+            - **Загрузки:** просмотр прогресса, открытие файлов и управление списком загрузок.
+            - **Инструменты:** снимки страниц, перевод через Google Translate, очистка данных сайтов и проверка обновлений.
+            - **Защита:** Safe Browsing при поддержке WebView и дополнительный список известных рекламных и аналитических доменов.
+
+            ## Приватность и ограничения
+
+            - История, закладки, настройки и обычные вкладки хранятся локально.
+            - Аккаунт FerBrows и облачная синхронизация не требуются.
+            - FerBrows не является VPN и не обеспечивает полную анонимность.
+            - Движок сайтов предоставляется системным Android System WebView.
+            - Некоторые функции зависят от версии Android System WebView.
+
+            ## Установка и обновление
+
+            1. Скачайте **apk-release-universal.apk** из раздела Assets.
+            2. Откройте APK и подтвердите установку Android.
+            3. Для обновления устанавливайте новую версию поверх старой — удалять приложение не нужно.
+
+            Минимальная версия: **Android 7.0 (API 24)**.
+
+            APK подписан релизным ключом проекта. Не удаляйте предыдущую версию перед обновлением: это приведёт к потере локальных данных.
+          files: release-assets/apk-release-universal.apk
