@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ fun TabOverviewDialog(
     onSelect: (BrowserTab) -> Unit,
     onClose: (BrowserTab) -> Unit,
     onNewTab: () -> Unit,
+    onGroup: (BrowserTab) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -94,7 +96,10 @@ fun TabOverviewDialog(
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(tab.title.ifBlank { "Новая вкладка" }, color = White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(tab.url.ifBlank { "Пустая вкладка" }, color = Muted, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(tab.groupName.ifBlank { tab.url.ifBlank { "Пустая вкладка" } }, color = if (tab.groupName.isNotBlank()) Lime else Muted, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            IconButton(onClick = { onGroup(tab) }, modifier = Modifier.size(29.dp)) {
+                                Icon(Icons.Filled.Folder, "Группа вкладок", tint = if (tab.groupName.isNotBlank()) Lime else Muted, modifier = Modifier.size(15.dp))
                             }
                             IconButton(onClick = { onClose(tab) }, modifier = Modifier.size(29.dp)) {
                                 Icon(Icons.Filled.Close, "Закрыть вкладку", tint = Muted, modifier = Modifier.size(16.dp))
