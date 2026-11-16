@@ -13,7 +13,8 @@ data class BrowserSettings(
     val homePage: String = "",
     val javaScriptEnabled: Boolean = true,
     val trackerProtectionEnabled: Boolean = true,
-    val reducedMotion: Boolean = false
+    val reducedMotion: Boolean = false,
+    val compactInterface: Boolean = false
 )
 
 class BrowserSettingsStore(context: Context) {
@@ -26,7 +27,8 @@ class BrowserSettingsStore(context: Context) {
         homePage = prefs.getString("home_page", "").orEmpty(),
         javaScriptEnabled = prefs.getBoolean("javascript_enabled", true),
         trackerProtectionEnabled = prefs.getBoolean("tracker_protection_enabled", true),
-        reducedMotion = prefs.getBoolean("reduced_motion", false)
+        reducedMotion = prefs.getBoolean("reduced_motion", false),
+        compactInterface = prefs.getBoolean("compact_interface", false)
     )
 
     fun save(settings: BrowserSettings) {
@@ -36,6 +38,7 @@ class BrowserSettingsStore(context: Context) {
             .putBoolean("javascript_enabled", settings.javaScriptEnabled)
             .putBoolean("tracker_protection_enabled", settings.trackerProtectionEnabled)
             .putBoolean("reduced_motion", settings.reducedMotion)
+            .putBoolean("compact_interface", settings.compactInterface)
             .apply()
     }
 }
