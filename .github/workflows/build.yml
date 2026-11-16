@@ -3,12 +3,13 @@ name: Android APK
 on:
   push:
     branches: [ main, ferbrows/productization ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -17,7 +18,7 @@ jobs:
     env:
       FERBROWS_HAS_RELEASE_KEY: ${{ secrets.FERBROWS_KEYSTORE_BASE64 != '' }}
       FERBROWS_VERSION_CODE: ${{ github.run_number }}
-      FERBROWS_VERSION_NAME: 0.3.${{ github.run_number }}
+      FERBROWS_VERSION_NAME: ${{ github.ref_type == 'tag' && github.ref_name || format('0.3.{0}', github.run_number) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -85,6 +86,14 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag' && env.FERBROWS_HAS_RELEASE_KEY == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: FerBrows ${{ github.ref_name }}
+          generate_release_notes: true
+          files: app/build/outputs/apk/release/*.apk
       - name: Run Android UI smoke tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
