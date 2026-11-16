@@ -2,7 +2,7 @@ name: Publish FerBrows Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, ferbrows/productization ]
   workflow_dispatch:
     inputs:
       version:
@@ -20,12 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FERBROWS_VERSION_CODE: ${{ github.run_number }}
-      FERBROWS_VERSION_NAME: ${{ inputs.version || '1.0.0' }}
+      FERBROWS_VERSION_NAME: ${{ inputs.version || '1.1.0' }}
     steps:
-      - name: Checkout main
+      - name: Checkout release commit
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -81,7 +81,7 @@ jobs:
       - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FerBrows-1.0.0-universal
+          name: FerBrows-1.1.0-universal
           path: release-assets/apk-release-universal.apk
           if-no-files-found: error
           retention-days: 90
@@ -89,14 +89,14 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version || '1.0.0' }}
-          target_commitish: main
-          name: 1.0.0
+          tag_name: v${{ inputs.version || '1.1.0' }}
+          target_commitish: ${{ github.sha }}
+          name: 1.1.0
           draft: false
           prerelease: false
           generate_release_notes: false
           body: |
-            # FerBrows 1.0.0 — первый стабильный релиз
+            # FerBrows 1.1.0 — обновление браузера
 
             Лёгкий Android-браузер от Toska Game Studio с акцентом на удобство, контроль над данными и персонализацию.
 
@@ -110,6 +110,12 @@ jobs:
             - **Загрузки:** просмотр прогресса, открытие файлов и управление загрузками.
             - **Инструменты:** снимки страниц, перевод через Google Translate, очистка данных сайтов и проверка обновлений.
             - **Защита:** Safe Browsing при поддержке WebView и дополнительный список известных рекламных и аналитических доменов.
+
+            ## Новое в 1.1.0
+
+            - Исправлена читаемость текста и подсказок в полях ввода тёмной темы.
+            - Добавлен настраиваемый блокировщик рекламы с тремя уровнями: слабый, средний и максимальный.
+            - Выбранный уровень блокировки сохраняется между запусками браузера.
 
             ## Приватность и ограничения
 
