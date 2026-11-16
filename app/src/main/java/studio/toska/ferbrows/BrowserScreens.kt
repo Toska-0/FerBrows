@@ -92,6 +92,7 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
 
     Row(
         modifier = Modifier.fillMaxWidth()
+            .animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = if (compact) 8.dp else 12.dp),
         horizontalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 7.dp)
@@ -111,8 +112,9 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
                         ) + fadeOut(animationSpec = tween(durationMillis = 160))
                 ) {
                     Row(
-                        modifier = Modifier.width(if (compact) 116.dp else 150.dp)
-                            .clip(RoundedCornerShape(topStart = if (compact) 10.dp else 13.dp, topEnd = if (compact) 10.dp else 13.dp))
+                        modifier = Modifier.animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
+                            .width(if (compact) 104.dp else 150.dp)
+                            .clip(RoundedCornerShape(topStart = if (compact) 9.dp else 13.dp, topEnd = if (compact) 9.dp else 13.dp))
                             .background(if (active) PanelSoft else Color(0xFF0A0E0A))
                             .border(
                                 1.dp,
@@ -120,7 +122,7 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
                                 RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp)
                             )
                             .clickable(enabled = !isClosing) { onSelect(tab) }
-                            .padding(start = if (compact) 7.dp else 9.dp, end = 3.dp, top = if (compact) 3.dp else 6.dp, bottom = if (compact) 3.dp else 6.dp),
+                            .padding(start = if (compact) 6.dp else 9.dp, end = 2.dp, top = if (compact) 2.dp else 6.dp, bottom = if (compact) 2.dp else 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(Modifier.size(if (compact) 6.dp else 7.dp).clip(CircleShape).background(if (active) Lime else Muted))
@@ -338,29 +340,39 @@ fun BottomToolbar(
     onForward: () -> Unit,
     onHome: () -> Unit,
     onTabs: () -> Unit,
-    tabCount: Int
+    tabCount: Int,
+    compact: Boolean = false,
+    reducedMotion: Boolean = false
 ) {
     Row(
-        Modifier.fillMaxWidth().background(Color(0xFF0B100B)).border(1.dp, PanelSoft).padding(horizontal = 22.dp, vertical = 7.dp),
+        Modifier.fillMaxWidth()
+            .animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
+            .background(Color(0xFF0B100B))
+            .border(1.dp, PanelSoft)
+            .padding(horizontal = if (compact) 14.dp else 22.dp, vertical = if (compact) 3.dp else 7.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ToolbarButton(Icons.Filled.ArrowBack, "Назад", canBack, onBack)
-        ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward)
-        ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true)
-        IconButton(onClick = onTabs) {
-            Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+        ToolbarButton(Icons.Filled.ArrowBack, "Назад", canBack, onBack, compact = compact, reducedMotion = reducedMotion)
+        ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward, compact = compact, reducedMotion = reducedMotion)
+        ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true, compact = compact, reducedMotion = reducedMotion)
+        IconButton(
+            onClick = onTabs,
+            modifier = Modifier.animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
+                .size(if (compact) 40.dp else 48.dp)
+        ) {
+            Box(Modifier.size(if (compact) 21.dp else 24.dp), contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.fillMaxSize())
                 Box(
                     Modifier.align(Alignment.BottomEnd)
                         .offset(x = 5.dp, y = 5.dp)
-                        .size(17.dp)
+                        .size(if (compact) 14.dp else 17.dp)
                         .clip(CircleShape)
                         .background(Lime)
                         .border(1.5.dp, Color(0xFF0B100B), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(tabCount.toString(), color = Background, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text(tabCount.toString(), color = Background, fontSize = if (compact) 7.sp else 8.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -368,13 +380,26 @@ fun BottomToolbar(
 }
 
 @Composable
-fun ToolbarButton(icon: ImageVector, description: String, enabled: Boolean, onClick: () -> Unit, highlighted: Boolean = false) {
-    IconButton(onClick = onClick, enabled = enabled) {
+fun ToolbarButton(
+    icon: ImageVector,
+    description: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    highlighted: Boolean = false,
+    compact: Boolean = false,
+    reducedMotion: Boolean = false
+) {
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.animateContentSize(animationSpec = tween(if (reducedMotion) 0 else 260))
+            .size(if (compact) 40.dp else 48.dp)
+    ) {
         Icon(icon, description, tint = when {
             highlighted -> Lime
             enabled -> White
             else -> Color(0xFF455045)
-        })
+        }, modifier = Modifier.size(if (compact) 20.dp else 24.dp))
     }
 }
 
