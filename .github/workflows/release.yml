@@ -8,7 +8,7 @@ on:
       version:
         description: "Release version"
         required: true
-        default: "1.1.5"
+        default: "1.1.7"
         type: string
 
 permissions:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FERBROWS_VERSION_CODE: ${{ github.run_number }}
-      FERBROWS_VERSION_NAME: ${{ inputs.version || '1.1.5' }}
+      FERBROWS_VERSION_NAME: ${{ inputs.version || '1.1.7' }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -81,7 +81,7 @@ jobs:
       - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FerBrows-1.1.5-universal
+          name: FerBrows-${{ inputs.version || '1.1.7' }}-universal
           path: release-assets/apk-release-universal.apk
           if-no-files-found: error
           retention-days: 90
@@ -91,15 +91,28 @@ jobs:
         with:
           tag_name: v${{ inputs.version || '1.1.5' }}
           target_commitish: main
-          name: 1.1.5
+          name: ${{ inputs.version || '1.1.7' }}
           draft: false
           prerelease: false
           generate_release_notes: false
           body: |
-            ## Новое в 1.1.5
+            ## Новое в 1.1.7
 
-            - Переработан блокировщик рекламы и фильтрация известных рекламных доменов.
-            - Улучшена настройка уровней защиты от рекламы и трекеров.
-            - Исправлены ошибки и повышена стабильность браузера.
+            ### Блокировщик рекламы и защита от трекеров
+            - Добавлена загрузка списков EasyList, EasyPrivacy и AdGuard Mobile.
+            - Фильтры сохраняются локально и обновляются автоматически раз в 24 часа.
+            - Реализована поддержка распространённых сетевых правил ABP: шаблоны URL, исключения, типы ресурсов, ограничения по доменам и сторонние запросы.
+            - Добавлена поддержка косметических правил для скрытия рекламных элементов на страницах.
+            - Добавлена ранняя инъекция CSS для скрытия известных рекламных баннеров до полной загрузки страницы.
+            - Усилена блокировка рекламных изображений и iframe по характерным адресам баннеров.
+            - Расширена защита от трекеров Sentry, Bugsnag и Яндекс Метрики.
+            - Оптимизирован поиск правил по доменам и загрузка фильтров в фоновом потоке.
+
+            ### Обновление браузера
+            - В окне обновления теперь отображается список изменений из описания релиза.
+
+            ### Примечание
+            - Набор поддерживаемых правил — практическая часть синтаксиса ABP, а не полная реализация uBlock Origin.
+            - Результат теста checkadblock.ru необходимо подтвердить после установки APK на устройстве.
 
           files: release-assets/apk-release-universal.apk

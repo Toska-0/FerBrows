@@ -385,6 +385,8 @@ private fun FerBrowsApp() {
         persistTabs()
     }
 
+    LaunchedEffect(Unit) { AdBlockFilterEngine.refreshIfNeeded(context) }
+
     fun createWebView(tabId: Int, isPrivate: Boolean): WebView {
         return WebView(context).apply {
             if (isPrivate && WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
@@ -395,6 +397,12 @@ private fun FerBrowsApp() {
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
             settings.javaScriptEnabled = browserSettings.javaScriptEnabled
+            if (adBlockLevel.get() != AdBlockLevel.LOW &&
+                WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                runCatching {
+                    WebViewCompat.addDocumentStartJavaScript(this, AdBlockFilterEngine.documentStartScript(), setOf("*"))
+                }
+            }
             applyWebTheme(this, darkTheme)
             settings.domStorageEnabled = true
             settings.allowFileAccess = false
@@ -536,8 +544,10 @@ private fun FerBrowsApp() {
             }
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
-                    if ((trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(request?.url?.host)) ||
-                        AdBlocker.shouldBlock(request?.url?.host, adBlockLevel.get())) {
+                    val requestUri = request?.url
+                    if ((trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(requestUri?.host)) ||
+                        AdBlocker.shouldBlock(requestUri?.host, adBlockLevel.get()) ||
+                        AdBlockFilterEngine.shouldBlock(requestUri, view?.url, request?.requestHeaders?.get("Accept"), adBlockLevel.get())) {
                         return android.webkit.WebResourceResponse(
                             "text/plain", "UTF-8", 204, "Blocked by FerBrows",
                             emptyMap(), ByteArrayInputStream(ByteArray(0))
@@ -618,6 +628,9 @@ private fun FerBrowsApp() {
                     }
                     if (activeTabId == tabId) { canBack = view?.canGoBack() == true; canForward = view?.canGoForward() == true; loading = false }
                     if (url != "about:blank") {
+                        AdBlockFilterEngine.cosmeticScript(url, adBlockLevel.get())?.let { script ->
+                            view?.evaluateJavascript(script, null)
+                        }
                         if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) {
                             val origin = CredentialVault.originOf(url.orEmpty())
                             val saved = origin?.let { credentialVault.forOrigin(it) }
@@ -1321,6 +1334,7 @@ private fun FerBrowsApp() {
     if (showUpdateDialog && latestUpdate != null) {
         FerBrowsUpdateDialog(
             version = latestUpdate!!.version,
+            releaseNotes = latestUpdate!!.releaseNotes,
             downloading = updateDownloadId != null,
             progress = updateProgress,
             failed = updateFailed,

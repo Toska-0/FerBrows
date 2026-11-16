@@ -13,7 +13,7 @@ import java.net.URL
 import java.util.Locale
 
 data class FerBrowsCountry(val code: String, val name: String, val flag: String)
-data class FerBrowsUpdate(val version: String, val downloadUrl: String, val fileName: String)
+data class FerBrowsUpdate(val version: String, val downloadUrl: String, val fileName: String, val releaseNotes: String)
 data class FerBrowsDownloadProgress(val downloaded: Long, val total: Long, val percent: Int, val finished: Boolean, val failed: Boolean)
 
 object FerBrowsNetworkInfo {
@@ -60,7 +60,7 @@ object FerBrowsUpdater {
                             .mapNotNull { assets.optJSONObject(it) }
                             .map { it.optString("name") to it.optString("browser_download_url") }
                             .firstOrNull { (name, url) -> name.endsWith(".apk", true) && url.startsWith("https://") }
-                            ?.let { (name, url) -> FerBrowsUpdate(version, url, name) }
+                            ?.let { (name, url) -> FerBrowsUpdate(version, url, name, release.optString("body").ifBlank { "Исправления ошибок и улучшения стабильности." }) }
                     }
                 }
             } finally {
