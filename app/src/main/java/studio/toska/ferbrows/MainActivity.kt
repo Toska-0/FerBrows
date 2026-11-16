@@ -45,6 +45,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -107,6 +108,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
@@ -126,6 +128,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import java.net.URLEncoder
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
@@ -230,6 +234,9 @@ private fun FerBrowsApp() {
     var nextTabId by remember { mutableIntStateOf(maxOf(store.loadNextTabId(), (restoredTabs.maxOfOrNull { it.id } ?: 0) + 1)) }
     val tabs = remember { mutableStateListOf<BrowserTab>().apply { addAll(restoredTabs.ifEmpty { listOf(BrowserTab(1, "Новая вкладка", "")) }) } }
     var homeVisibleTabId by remember { mutableIntStateOf(activeTabId.takeIf { id -> tabs.firstOrNull { it.id == id }?.url.isNullOrBlank() } ?: -1) }
+    val tabTransition = remember { Animatable(0f) }
+    val tabTransitionScope = rememberCoroutineScope()
+    val tabTransitionJob = remember { mutableStateOf<Job?>(null) }
     val history = remember { mutableStateListOf<HistoryEntry>().apply { addAll(store.loadHistory().take(100)) } }
     val bookmarks = remember { mutableStateListOf<String>().apply { addAll(store.loadBookmarks()) } }
     val webViews = remember { mutableStateMapOf<Int, WebView>() }
@@ -702,17 +709,26 @@ private fun FerBrowsApp() {
     }
     fun switchTo(tab: BrowserTab) {
         if (tab.id == activeTabId) return
-        val state = BrowserTabReducer.select(BrowserTabsState(tabs.toList(), activeTabId, nextTabId), tab.id)
-        activeTabId = state.activeTabId
-        homeVisibleTabId = if (tab.url.isBlank()) tab.id else -1
-        persistTabs()
-        updateTab(tab.url, tab.title)
-        val selected = webViews[tab.id]
-        canBack = selected?.canGoBack() == true
-        canForward = selected?.canGoForward() == true
-        loading = false
-        progress = 0
-        pageError = null
+        tabTransitionJob.value?.cancel()
+        tabTransitionJob.value = tabTransitionScope.launch {
+            // Cover the web-content area before swapping WebViews. This avoids exposing
+            // the empty frame Compose can produce while AndroidView detaches/reattaches.
+            tabTransition.animateTo(0.84f, animationSpec = tween(135))
+            val state = BrowserTabReducer.select(BrowserTabsState(tabs.toList(), activeTabId, nextTabId), tab.id)
+            activeTabId = state.activeTabId
+            homeVisibleTabId = if (tab.url.isBlank()) tab.id else -1
+            persistTabs()
+            updateTab(tab.url, tab.title)
+            val selected = webViews[tab.id]
+            canBack = selected?.canGoBack() == true
+            canForward = selected?.canGoForward() == true
+            loading = false
+            progress = 0
+            pageError = null
+            // Let the new AndroidView attach and draw behind the dark layer first.
+            delay(34)
+            tabTransition.animateTo(0f, animationSpec = tween(250))
+        }
     }
 
     fun addTab(isPrivate: Boolean = false) {
@@ -897,6 +913,13 @@ private fun FerBrowsApp() {
                         ) {
                             HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled)
                         }
+                    }
+                    if (tabTransition.value > 0.001f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = tabTransition.value))
+                        )
                     }
                     if (pageError != null) {
                         Surface(
