@@ -1,6 +1,7 @@
 package studio.toska.ferbrows
 
 import android.net.Uri
+import coil.compose.AsyncImage
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -219,6 +220,24 @@ fun AddressBar(
 }
 
 @Composable
+private fun BookmarkFavicon(url: String, sizeDp: Int) {
+    val host = remember(url) { Uri.parse(url).host?.removePrefix("www.").orEmpty() }
+    Box(
+        Modifier.size(sizeDp.dp).clip(RoundedCornerShape(10.dp)).background(PanelSoft),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(host.take(1).uppercase().ifBlank { "?" }, color = Lime, fontWeight = FontWeight.Bold)
+        if (host.isNotBlank()) {
+            AsyncImage(
+                model = "https://$host/favicon.ico",
+                contentDescription = "Значок сайта $host",
+                modifier = Modifier.fillMaxSize().padding(5.dp)
+            )
+        }
+    }
+}
+
+@Composable
 fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: List<String>, trackerProtectionEnabled: Boolean = true) {
     var query by remember { mutableStateOf("") }
     val sites = listOf(
@@ -275,9 +294,7 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
                     .background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(16.dp)).clickable { onOpen(site.third) }.padding(15.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(PanelSoft), contentAlignment = Alignment.Center) {
-                    Text(site.first.take(1), color = Lime, fontSize = 20.sp, fontWeight = FontWeight.Black)
-                }
+                BookmarkFavicon(site.third, 38)
                 Column(Modifier.weight(1f).padding(start = 12.dp)) {
                     Text(site.first, color = White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Text(site.second, color = Muted, fontSize = 11.sp)
@@ -297,9 +314,7 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
                             .background(Panel).clickable { onOpen(url) }.padding(horizontal = 13.dp, vertical = 11.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(Modifier.size(30.dp).clip(RoundedCornerShape(9.dp)).background(PanelSoft), contentAlignment = Alignment.Center) {
-                            Text(host.take(1).uppercase(), color = Lime, fontWeight = FontWeight.Bold)
-                        }
+                        BookmarkFavicon(url, 30)
                         Text(host, color = White, fontSize = 12.sp, modifier = Modifier.weight(1f).padding(start = 10.dp), maxLines = 1)
                         Icon(Icons.Filled.ArrowForward, null, tint = Muted, modifier = Modifier.size(15.dp))
                     }
