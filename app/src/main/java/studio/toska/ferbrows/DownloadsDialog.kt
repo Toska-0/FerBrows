@@ -29,6 +29,7 @@ fun DownloadsDialog(
     downloads: List<BrowserDownload>,
     onOpen: (Long) -> Unit,
     onRemove: (Long) -> Unit,
+    onClearCompleted: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -40,6 +41,9 @@ fun DownloadsDialog(
                 modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                if (downloads.any { it.status == DownloadManager.STATUS_SUCCESSFUL || it.status == DownloadManager.STATUS_FAILED }) {
+                    TextButton(onClick = onClearCompleted) { Text("Очистить завершённые", color = Muted, fontSize = 11.sp) }
+                }
                 if (downloads.isEmpty()) Text("Загрузок пока нет", color = Muted)
                 downloads.forEach { item ->
                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
