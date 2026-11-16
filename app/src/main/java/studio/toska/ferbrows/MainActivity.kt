@@ -163,9 +163,15 @@ class MainActivity : ComponentActivity() {
 private fun FerBrowsApp() {
     val context = LocalContext.current
     val credentialVault = remember { CredentialVault(context) }
-    var pendingCredential by remember { mutableStateOf<SavedCredential?>(null) }
     var showCredentials by remember { mutableStateOf(false) }
     var credentialListRefresh by remember { mutableIntStateOf(0) }
+    var addingCredential by remember { mutableStateOf(false) }
+    var credentialTitleDraft by remember { mutableStateOf("") }
+    var credentialWebsiteDraft by remember { mutableStateOf("") }
+    var credentialUsernameDraft by remember { mutableStateOf("") }
+    var credentialPasswordDraft by remember { mutableStateOf("") }
+    var credentialNoteDraft by remember { mutableStateOf("") }
+    var revealedCredentialIds by remember { mutableStateOf(setOf<String>()) }
     var currentUrl by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var pageTitle by remember { mutableStateOf("Новая вкладка") }
@@ -358,28 +364,6 @@ private fun FerBrowsApp() {
             settings.setSupportMultipleWindows(false)
             android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) settings.safeBrowsingEnabled = true
-            val credentialWebView = this
-            if (!isPrivate) {
-                addJavascriptInterface(object {
-                    @android.webkit.JavascriptInterface
-                    fun postMessage(payload: String) {
-                        runCatching {
-                            val message = org.json.JSONObject(payload)
-                            if (message.optString("type") != "save") return
-                            val origin = message.optString("origin")
-                            val actualOrigin = CredentialVault.originOf(credentialWebView.url.orEmpty())
-                            val username = message.optString("username")
-                            val password = message.optString("password")
-                            if (origin != actualOrigin || !origin.startsWith("https://") || username.isBlank() || password.isBlank()) return
-                            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                                if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) {
-                                    pendingCredential = SavedCredential(origin, username, password, System.currentTimeMillis())
-                                }
-                            }
-                        }
-                    }
-                }, "FerBrowsVault")
-            }
             setBackgroundColor(android.graphics.Color.rgb(5, 7, 5))
             var gestureDownX = 0f
             var gestureDownY = 0f
@@ -1137,55 +1121,78 @@ private fun FerBrowsApp() {
         )
     }
 
-    if (pendingCredential != null) {
-        val candidate = pendingCredential!!
-        AlertDialog(
-            onDismissRequest = { pendingCredential = null },
-            containerColor = Panel,
-            title = { Text("Сохранить пароль?", color = White) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(candidate.origin, color = Muted)
-                    Text("Логин: ${candidate.username}", color = White)
-                    Text("Пароль будет сохранён в зашифрованном хранилище устройства.", color = Muted)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    runCatching { credentialVault.save(candidate.origin, candidate.username, candidate.password) }
-                        .onSuccess { Toast.makeText(context, "Пароль сохранён", Toast.LENGTH_SHORT).show() }
-                        .onFailure { Toast.makeText(context, "Не удалось сохранить пароль", Toast.LENGTH_SHORT).show() }
-                    pendingCredential = null
-                }) { Text("Сохранить", color = Lime) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingCredential = null }) { Text("Не сейчас", color = Muted) }
-            }
-        )
-    }
-
     if (showCredentials) {
         val credentials = remember(showCredentials, credentialListRefresh) { credentialVault.all() }
         AlertDialog(
-            onDismissRequest = { showCredentials = false },
+            onDismissRequest = { showCredentials = false; addingCredential = false },
             containerColor = Panel,
-            title = { Text("Сохранённые пароли", color = White) },
+            title = { Text(if (addingCredential) "Новая запись" else "Сохранённые пароли", color = White) },
             text = {
-                if (credentials.isEmpty()) {
-                    Text("Сохранённых учётных записей пока нет.", color = Muted)
+                if (addingCredential) {
+                    Column(
+                        modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(9.dp)
+                    ) {
+                        androidx.compose.material3.OutlinedTextField(
+                            value = credentialTitleDraft, onValueChange = { credentialTitleDraft = it.take(80) },
+                            label = { Text("Название записи *") }, placeholder = { Text("Например, Google") },
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = credentialWebsiteDraft, onValueChange = { credentialWebsiteDraft = it.take(240) },
+                            label = { Text("Сайт (необязательно)") }, placeholder = { Text("google.com") },
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = credentialUsernameDraft, onValueChange = { credentialUsernameDraft = it.take(240) },
+                            label = { Text("Логин или почта *") }, singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = credentialPasswordDraft, onValueChange = { credentialPasswordDraft = it },
+                            label = { Text("Пароль *") }, singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = credentialNoteDraft, onValueChange = { credentialNoteDraft = it.take(2000) },
+                            label = { Text("Заметка") }, placeholder = { Text("Дополнительная информация") },
+                            modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4
+                        )
+                        Text("Все поля записи будут зашифрованы на устройстве.", color = Muted, fontSize = 12.sp)
+                    }
+                } else if (credentials.isEmpty()) {
+                    Text("Записей пока нет. Добавь логин, почту и пароль вручную.", color = Muted)
                 } else {
                     Column(
-                        modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                        modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         credentials.forEach { credential ->
-                            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                Text(credential.origin, color = White, fontWeight = FontWeight.SemiBold)
-                                Text(credential.username, color = Muted)
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val revealed = credential.id in revealedCredentialIds
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(credential.title, color = White, fontWeight = FontWeight.SemiBold)
+                                if (credential.origin.isNotBlank()) Text(credential.origin, color = Muted, fontSize = 12.sp)
+                                Text("Логин: ${credential.username}", color = White, fontSize = 13.sp)
+                                if (revealed) Text("Пароль: ${credential.password}", color = White, fontSize = 13.sp)
+                                if (credential.note.isNotBlank()) Text(credential.note, color = Muted, fontSize = 12.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                     TextButton(onClick = {
-                                        credentialVault.remove(credential.origin, credential.username)
+                                        revealedCredentialIds = if (revealed) revealedCredentialIds - credential.id else revealedCredentialIds + credential.id
+                                    }) { Text(if (revealed) "Скрыть" else "Показать", color = Lime) }
+                                    TextButton(onClick = {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Логин", credential.username))
+                                        Toast.makeText(context, "Логин скопирован", Toast.LENGTH_SHORT).show()
+                                    }) { Text("Копировать логин", color = Muted) }
+                                    TextButton(onClick = {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Пароль", credential.password))
+                                        Toast.makeText(context, "Пароль скопирован", Toast.LENGTH_SHORT).show()
+                                    }) { Text("Пароль", color = Muted) }
+                                    TextButton(onClick = {
+                                        credentialVault.remove(credential.id)
                                         credentialListRefresh++
+                                        revealedCredentialIds = revealedCredentialIds - credential.id
                                     }) { Text("Удалить", color = Color(0xFFFF7777)) }
                                 }
                             }
@@ -1194,12 +1201,42 @@ private fun FerBrowsApp() {
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showCredentials = false }) { Text("Готово", color = Lime) } }
+            confirmButton = {
+                if (addingCredential) {
+                    TextButton(onClick = {
+                        if (credentialTitleDraft.isBlank() || credentialUsernameDraft.isBlank() || credentialPasswordDraft.isBlank()) {
+                            Toast.makeText(context, "Заполни название, логин и пароль", Toast.LENGTH_SHORT).show()
+                        } else {
+                            runCatching {
+                                credentialVault.add(
+                                    credentialTitleDraft, credentialWebsiteDraft, credentialUsernameDraft,
+                                    credentialPasswordDraft, credentialNoteDraft
+                                )
+                            }.onSuccess {
+                                credentialListRefresh++
+                                addingCredential = false
+                                credentialTitleDraft = ""; credentialWebsiteDraft = ""; credentialUsernameDraft = ""
+                                credentialPasswordDraft = ""; credentialNoteDraft = ""
+                                Toast.makeText(context, "Запись сохранена в зашифрованном хранилище", Toast.LENGTH_SHORT).show()
+                            }.onFailure {
+                                Toast.makeText(context, "Проверь адрес сайта и попробуй ещё раз", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }) { Text("Сохранить", color = Lime) }
+                } else {
+                    TextButton(onClick = {
+                        addingCredential = true
+                        credentialTitleDraft = ""; credentialWebsiteDraft = ""; credentialUsernameDraft = ""
+                        credentialPasswordDraft = ""; credentialNoteDraft = ""
+                    }) { Text("+ Добавить", color = Lime) }
+                    TextButton(onClick = { showCredentials = false }) { Text("Готово", color = Muted) }
+                }
+            },
+            dismissButton = {
+                if (addingCredential) TextButton(onClick = { addingCredential = false }) { Text("Назад", color = Muted) }
+            }
         )
     }
-    
-
-
 
     if (showOnboarding) {
         WelcomeDialog(
