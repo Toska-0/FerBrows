@@ -355,7 +355,7 @@ private fun FerBrowsApp() {
         }.onFailure { store.clearWebViewState(tabId) }
     }
 
-    val lifecycleActivity = context as? ComponentActivity
+    val lifecycleActivity = context as? AppCompatActivity
     DisposableEffect(lifecycleActivity) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
@@ -879,7 +879,7 @@ private fun FerBrowsApp() {
     }
 
     SideEffect {
-        val activity = context as? ComponentActivity
+        val activity = context as? AppCompatActivity
         activity?.window?.let { window ->
             val barColor = if (darkTheme) android.graphics.Color.rgb(5, 7, 5) else android.graphics.Color.rgb(245, 247, 245)
             window.statusBarColor = barColor
@@ -1411,7 +1411,7 @@ private fun FerBrowsApp() {
             title = { Text("Выйти из FerBrows?", color = White) },
             text = { Text("Открытые обычные вкладки будут сохранены.", color = Muted) },
             confirmButton = {
-                TextButton(onClick = { (context as? ComponentActivity)?.finish() }) {
+                TextButton(onClick = { (context as? AppCompatActivity)?.finish() }) {
                     Text("Выйти", color = Lime)
                 }
             },
