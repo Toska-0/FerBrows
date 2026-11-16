@@ -709,6 +709,14 @@ private fun FerBrowsApp() {
                         showSettings = true
                         menuDialog = false
                     }
+                    MenuRow("Проверить обновления", "Открыть последнюю версию FerBrows") {
+                        menuDialog = false
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Toska-0/FerBrows/releases/latest")))
+                        }.onFailure {
+                            Toast.makeText(context, "Не удалось открыть страницу обновлений", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                     MenuRow("Политика конфиденциальности", "Как браузер обрабатывает данные") {
                         menuDialog = false
                         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Toska-0/FerBrows/blob/main/PRIVACY.md"))) }
