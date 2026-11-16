@@ -40,7 +40,8 @@ fun BrowserSettingsDialog(
     onSave: (BrowserSettings) -> Unit,
     onClearHistory: () -> Unit,
     onClearSiteData: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    personalizationOnly: Boolean = false
 ) {
     var draft by remember(settings) { mutableStateOf(settings) }
     Dialog(
@@ -59,8 +60,8 @@ fun BrowserSettingsDialog(
                 ) {
                     IconButton(onClick = onDismiss) { Icon(Icons.Filled.ArrowBack, "Назад", tint = White) }
                     Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                        Text("Настройки", color = White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-                        Text("Настрой FerBrows под себя", color = Muted, fontSize = 12.sp)
+                        Text(if (personalizationOnly) "Персонализация" else "Настройки", color = White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        Text(if (personalizationOnly) "Внешний вид и поведение браузера" else "Настрой FerBrows под себя", color = Muted, fontSize = 12.sp)
                     }
                     Icon(Icons.Filled.Settings, null, tint = Lime, modifier = Modifier.size(22.dp))
                 }
@@ -68,6 +69,7 @@ fun BrowserSettingsDialog(
                     Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    if (!personalizationOnly) {
                     SettingsGroup("ОСНОВНЫЕ", Icons.Filled.Language) {
                         SettingsAction("Поисковая система", draft.searchEngine.label, "Поиск из адресной строки", onClick = {
                             val engines = SearchEngine.values()
@@ -108,15 +110,22 @@ fun BrowserSettingsDialog(
                             modifier = Modifier.padding(top = 8.dp, bottom = 5.dp)
                         )
                     }
-                    SettingsGroup("ВНЕШНИЙ ВИД", Icons.Filled.Palette) {
+                    }
+                    SettingsGroup("ПЕРСОНАЛИЗАЦИЯ", Icons.Filled.Palette) {
+                        SettingsToggle("Компактный интерфейс", "Использовать уменьшенные панели браузера", draft.compactInterface) {
+                            draft = draft.copy(compactInterface = it)
+                        }
+                        HorizontalDivider(color = PanelSoft)
                         SettingsToggle("Меньше анимаций", "Сократить декоративные переходы", draft.reducedMotion) {
                             draft = draft.copy(reducedMotion = it)
                         }
                     }
+                    if (!personalizationOnly) {
                     SettingsGroup("ДАННЫЕ И ХРАНИЛИЩЕ", Icons.Filled.Storage) {
                         SettingsAction("Очистить историю", "Удалить список посещённых страниц", "Действие нельзя отменить", onClearHistory, destructive = true)
                         HorizontalDivider(color = PanelSoft)
                         SettingsAction("Очистить данные сайтов", "Кэш, cookies и локальные данные", "Может привести к выходу из аккаунтов", onClearSiteData, destructive = true)
+                    }
                     }
                     Spacer(Modifier.height(8.dp))
                     Text("FerBrows · настройки браузера", color = Muted, fontSize = 10.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
