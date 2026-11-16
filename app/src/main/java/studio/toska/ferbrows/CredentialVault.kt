@@ -8,6 +8,7 @@ import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.KeyStore
+import java.util.UUID
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -17,31 +18,44 @@ data class SavedCredential(
     val origin: String,
     val username: String,
     val password: String,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val id: String = UUID.randomUUID().toString(),
+    val title: String = origin.ifBlank { username },
+    val note: String = ""
 )
 
 class CredentialVault(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("ferbrows_credential_vault", Context.MODE_PRIVATE)
 
     @Synchronized
-    fun all(): List<SavedCredential> = readAll()
+    fun all(): List<SavedCredential> = readAll().sortedByDescending { it.updatedAt }
 
     @Synchronized
     fun forOrigin(origin: String): SavedCredential? =
         readAll().filter { it.origin == origin }.maxByOrNull { it.updatedAt }
 
     @Synchronized
-    fun save(origin: String, username: String, password: String) {
-        require(origin.startsWith("https://") || origin.startsWith("http://"))
-        require(username.isNotBlank() && password.isNotBlank())
-        val entries = readAll().filterNot { it.origin == origin && it.username == username }.toMutableList()
-        entries += SavedCredential(origin, username, password, System.currentTimeMillis())
+    fun add(title: String, website: String, username: String, password: String, note: String) {
+        require(title.isNotBlank() && username.isNotBlank() && password.isNotBlank())
+        val normalizedOrigin = website.trim().takeIf { it.isNotBlank() }?.let { raw ->
+            val candidate = if (raw.contains("://")) raw else "https://$raw"
+            originOf(candidate) ?: throw IllegalArgumentException("Invalid website")
+        }.orEmpty()
+        val entries = readAll().toMutableList()
+        entries += SavedCredential(
+            origin = normalizedOrigin,
+            username = username.trim(),
+            password = password,
+            updatedAt = System.currentTimeMillis(),
+            title = title.trim(),
+            note = note.trim()
+        )
         writeAll(entries)
     }
 
     @Synchronized
-    fun remove(origin: String, username: String) {
-        writeAll(readAll().filterNot { it.origin == origin && it.username == username })
+    fun remove(id: String) {
+        writeAll(readAll().filterNot { it.id == id })
     }
 
     private fun readAll(): List<SavedCredential> {
@@ -59,8 +73,16 @@ class CredentialVault(context: Context) {
                 val origin = item.optString("origin")
                 val username = item.optString("username")
                 val password = item.optString("password")
-                if (origin.isBlank() || username.isBlank() || password.isBlank()) null
-                else SavedCredential(origin, username, password, item.optLong("updatedAt"))
+                if (username.isBlank() || password.isBlank()) null
+                else SavedCredential(
+                    origin = origin,
+                    username = username,
+                    password = password,
+                    updatedAt = item.optLong("updatedAt"),
+                    id = item.optString("id").ifBlank { "$origin|$username" },
+                    title = item.optString("title").ifBlank { origin.ifBlank { username } },
+                    note = item.optString("note")
+                )
             }
         }.getOrElse { emptyList() }
     }
@@ -69,9 +91,12 @@ class CredentialVault(context: Context) {
         val json = JSONArray()
         entries.forEach { entry ->
             json.put(JSONObject().apply {
+                put("id", entry.id)
+                put("title", entry.title)
                 put("origin", entry.origin)
                 put("username", entry.username)
                 put("password", entry.password)
+                put("note", entry.note)
                 put("updatedAt", entry.updatedAt)
             })
         }
