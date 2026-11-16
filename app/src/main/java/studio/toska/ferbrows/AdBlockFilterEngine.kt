@@ -207,6 +207,20 @@ internal object AdBlockFilterEngine {
         return level == AdBlockLevel.MAXIMUM && TrackerProtection.shouldBlock(host)
     }
 
+    fun documentStartScript(): String = """
+        (function(){
+          var id='ferbrows-early-ad-css';
+          var css="img[src*='/banners/'],img[src*='advertising_ads_banner'],img[src*='/ads/'],iframe[src*='/ads/']{display:none!important;visibility:hidden!important;max-height:0!important;min-height:0!important;overflow:hidden!important}";
+          var inject=function(){
+            if(!document.documentElement || document.getElementById(id)) return;
+            var style=document.createElement('style');style.id=id;style.textContent=css;
+            (document.head||document.documentElement).appendChild(style);
+          };
+          inject();
+          new MutationObserver(inject).observe(document,{childList:true,subtree:true});
+        })();
+    """.trimIndent()
+
     fun cosmeticScript(pageUrl: String?, level: AdBlockLevel): String? {
         if (level == AdBlockLevel.LOW || pageUrl.isNullOrBlank()) return null
         val host = runCatching { Uri.parse(pageUrl).host?.lowercase(Locale.ROOT) }.getOrNull() ?: return null
