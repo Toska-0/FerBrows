@@ -112,6 +112,23 @@ fun BrowserSettingsDialog(
                     }
                     }
                     SettingsGroup("ПЕРСОНАЛИЗАЦИЯ", Icons.Filled.Palette) {
+                        SettingsAction(
+                            "Цвет акцента",
+                            when (draft.accentColor.uppercase()) {
+                                "#55D6FF" -> "Голубой"
+                                "#B69CFF" -> "Фиолетовый"
+                                "#FFB86B" -> "Янтарный"
+                                "#FF7A9E" -> "Розовый"
+                                else -> "Лаймовый"
+                            },
+                            "Изменить основной цвет интерфейса",
+                            onClick = {
+                                val palette = listOf("#C6FF1A", "#55D6FF", "#B69CFF", "#FFB86B", "#FF7A9E")
+                                val current = palette.indexOf(draft.accentColor.uppercase()).coerceAtLeast(0)
+                                draft = draft.copy(accentColor = palette[(current + 1) % palette.size])
+                            }
+                        )
+                        HorizontalDivider(color = PanelSoft)
                         SettingsToggle("Компактный интерфейс", "Использовать уменьшенные панели браузера", draft.compactInterface) {
                             draft = draft.copy(compactInterface = it)
                         }
