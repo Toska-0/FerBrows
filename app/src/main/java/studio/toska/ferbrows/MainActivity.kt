@@ -30,6 +30,7 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewCompat
+import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import androidx.webkit.ProfileStore
 import androidx.activity.compose.BackHandler
@@ -100,6 +101,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.DisposableEffect
@@ -121,6 +123,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -136,14 +139,33 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import org.json.JSONArray
 
-internal val Background = Color(0xFF050705)
-internal val Panel = Color(0xFF111811)
-internal val PanelSoft = Color(0xFF172117)
+internal data class BrowserPalette(
+    val background: Color, val panel: Color, val panelSoft: Color,
+    val text: Color, val muted: Color, val green: Color
+)
+private val DarkPalette = BrowserPalette(Color(0xFF050705), Color(0xFF111811), Color(0xFF172117), Color(0xFFEAF2E7), Color(0xFF91A38F), Color(0xFF4ADE80))
+private val LightPalette = BrowserPalette(Color(0xFFF5F7F5), Color(0xFFFFFFFF), Color(0xFFE8EEE8), Color(0xFF172117), Color(0xFF647267), Color(0xFF16834A))
+private val LocalBrowserPalette = compositionLocalOf { DarkPalette }
 private val LocalAccentColor = compositionLocalOf { Color(0xFFC6FF1A) }
+internal val Background: Color @Composable get() = LocalBrowserPalette.current.background
+internal val Panel: Color @Composable get() = LocalBrowserPalette.current.panel
+internal val PanelSoft: Color @Composable get() = LocalBrowserPalette.current.panelSoft
 internal val Lime: Color @Composable get() = LocalAccentColor.current
-internal val Green = Color(0xFF4ADE80)
-internal val Muted = Color(0xFF91A38F)
-internal val White = Color(0xFFEAF2E7)
+internal val Green: Color @Composable get() = LocalBrowserPalette.current.green
+internal val Muted: Color @Composable get() = LocalBrowserPalette.current.muted
+internal val White: Color @Composable get() = LocalBrowserPalette.current.text
+
+private fun applyWebTheme(view: WebView, dark: Boolean) {
+    val settings = view.settings
+    if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+        WebSettingsCompat.setAlgorithmicDarkeningAllowed(settings, dark)
+    } else if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+        WebSettingsCompat.setForceDark(settings, if (dark) WebSettingsCompat.FORCE_DARK_ON else WebSettingsCompat.FORCE_DARK_OFF)
+        if (dark && WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK_STRATEGY)) {
+            WebSettingsCompat.setForceDarkStrategy(settings, WebSettingsCompat.DARK_STRATEGY_PREFER_WEB_THEME_OVER_USER_AGENT_DARKENING)
+        }
+    }
+}
 private const val PRIVATE_PROFILE_NAME = "FerBrowsPrivate"
 
 
@@ -210,6 +232,8 @@ private fun FerBrowsApp() {
     var showOnboarding by remember { mutableStateOf(!onboardingPrefs.getBoolean("completed", false)) }
     val settingsStore = remember { BrowserSettingsStore(context) }
     var browserSettings by remember { mutableStateOf(settingsStore.load()) }
+    val systemDarkTheme = isSystemInDarkTheme()
+    val darkTheme = when (browserSettings.theme) { BrowserTheme.DARK -> true; BrowserTheme.LIGHT -> false; BrowserTheme.SYSTEM -> systemDarkTheme }
     val accentColor = remember(browserSettings.accentColor) {
         runCatching { Color(android.graphics.Color.parseColor(browserSettings.accentColor)) }
             .getOrDefault(Color(0xFFC6FF1A))
@@ -353,6 +377,7 @@ private fun FerBrowsApp() {
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
             settings.javaScriptEnabled = browserSettings.javaScriptEnabled
+            applyWebTheme(this, darkTheme)
             settings.domStorageEnabled = true
             settings.allowFileAccess = false
             settings.allowContentAccess = true
@@ -844,8 +869,19 @@ private fun FerBrowsApp() {
         webView.loadUrl(target)
     }
 
-    CompositionLocalProvider(LocalAccentColor provides accentColor) {
-    MaterialTheme {
+    SideEffect {
+        val activity = context as? ComponentActivity
+        activity?.window?.let { window ->
+            val barColor = if (darkTheme) android.graphics.Color.rgb(5, 7, 5) else android.graphics.Color.rgb(245, 247, 245)
+            window.statusBarColor = barColor
+            window.navigationBarColor = barColor
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = if (darkTheme) 0 else
+                android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        }
+    }
+    CompositionLocalProvider(LocalBrowserPalette provides if (darkTheme) DarkPalette else LightPalette, LocalAccentColor provides accentColor) {
+    MaterialTheme(colorScheme = if (darkTheme) androidx.compose.material3.darkColorScheme() else androidx.compose.material3.lightColorScheme()) {
         Surface(modifier = Modifier.fillMaxSize(), color = Background) {
             Column(
                 modifier = Modifier.fillMaxSize()
@@ -1328,7 +1364,8 @@ private fun FerBrowsApp() {
                 browserSettings = updated
                 trackerProtectionEnabled.set(updated.trackerProtectionEnabled)
                 settingsStore.save(updated)
-                webViews.values.forEach { it.settings.javaScriptEnabled = updated.javaScriptEnabled }
+                val updatedDark = when (updated.theme) { BrowserTheme.DARK -> true; BrowserTheme.LIGHT -> false; BrowserTheme.SYSTEM -> systemDarkTheme }
+                webViews.values.forEach { view -> view.settings.javaScriptEnabled = updated.javaScriptEnabled; applyWebTheme(view, updatedDark) }
             },
             onClearHistory = {
                 history.clear()
