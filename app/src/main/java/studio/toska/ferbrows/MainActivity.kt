@@ -579,19 +579,14 @@ private fun FerBrowsApp() {
                     compact = compactBrowserChrome
                 )
 
-                AnimatedVisibility(
-                    visible = !compactBrowserChrome,
-                    enter = if (browserSettings.reducedMotion) EnterTransition.None else expandVertically(expandFrom = Alignment.Top) + fadeIn(),
-                    exit = if (browserSettings.reducedMotion) ExitTransition.None else shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
-                ) {
-                    TabStrip(
-                        tabs = tabs,
-                        activeId = activeTabId,
-                        onSelect = { tab -> switchTo(tab) },
-                        onClose = { tab -> closeTab(tab) },
-                        reducedMotion = browserSettings.reducedMotion
-                    )
-                }
+                TabStrip(
+                    tabs = tabs,
+                    activeId = activeTabId,
+                    onSelect = { tab -> switchTo(tab) },
+                    onClose = { tab -> closeTab(tab) },
+                    reducedMotion = browserSettings.reducedMotion,
+                    compact = compactBrowserChrome
+                )
 
                 AddressBar(
                     value = address,
