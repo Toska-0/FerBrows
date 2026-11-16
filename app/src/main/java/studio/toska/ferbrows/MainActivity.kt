@@ -1057,7 +1057,7 @@ private fun FerBrowsApp() {
             containerColor = Panel,
             title = { Text("FerBrows", color = White, fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     MenuRow("Закладки", "Сохранённые сайты") {
                         showBookmarks = true
                         menuDialog = false
