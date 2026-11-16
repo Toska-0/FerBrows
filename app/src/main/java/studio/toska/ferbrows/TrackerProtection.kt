@@ -10,7 +10,10 @@ object TrackerProtection {
         "static.ads-twitter.com", "scorecardresearch.com", "hotjar.com",
         "segment.io", "api.segment.io", "mixpanel.com", "amplitude.com",
         "clarity.ms", "bat.bing.com", "taboola.com", "outbrain.com",
-        "criteo.com", "adsrvr.org", "quantserve.com", "adnxs.com", "adform.net",\n        "sentry.io", "browser.sentry-cdn.com", "ingest.sentry.io", "o0.ingest.sentry.io",\n        "bugsnag.com", "notify.bugsnag.com", "sessions.bugsnag.com", "api.bugsnag.com",\n        "app.bugsnag.com", "fullstory.com", "mouseflow.com", "inspectlet.com"
+        "criteo.com", "adsrvr.org", "quantserve.com", "adnxs.com", "adform.net",
+        "sentry.io", "browser.sentry-cdn.com", "ingest.sentry.io", "o0.ingest.sentry.io",
+        "bugsnag.com", "notify.bugsnag.com", "sessions.bugsnag.com", "api.bugsnag.com",
+        "app.bugsnag.com", "fullstory.com", "mouseflow.com", "inspectlet.com"
     )
 
     fun shouldBlock(host: String?): Boolean {
