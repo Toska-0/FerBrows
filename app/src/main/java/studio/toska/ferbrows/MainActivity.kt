@@ -170,6 +170,7 @@ private fun FerBrowsApp() {
     var showHistory by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var personalizationOnly by remember { mutableStateOf(false) }
+    var privacyOnly by remember { mutableStateOf(false) }
     var showDownloads by remember { mutableStateOf(false) }
     val downloadsStore = remember { BrowserDownloadsStore(context) }
     var downloads by remember { mutableStateOf(downloadsStore.query()) }
@@ -909,13 +910,21 @@ private fun FerBrowsApp() {
                             Toast.makeText(context, "Сначала открой сайт для перевода", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    MenuRow("Персонализация", "Компактный интерфейс и анимации") {
+                    MenuRow("Персонализация", "Цвета, панели, анимации и жесты") {
                         personalizationOnly = true
+                        privacyOnly = false
                         showSettings = true
                         menuDialog = false
                     }
-                    MenuRow("Настройки", "Поиск, домашняя страница, приватность и данные") {
+                    MenuRow("Конфиденциальность", "Защита от трекеров и управление данными") {
                         personalizationOnly = false
+                        privacyOnly = true
+                        showSettings = true
+                        menuDialog = false
+                    }
+                    MenuRow("Настройки", "Поиск, домашняя страница и основные параметры") {
+                        personalizationOnly = false
+                        privacyOnly = false
                         showSettings = true
                         menuDialog = false
                     }
@@ -1053,8 +1062,9 @@ private fun FerBrowsApp() {
                     }
                 }
             },
-            onDismiss = { showSettings = false; personalizationOnly = false },
-            personalizationOnly = personalizationOnly
+            onDismiss = { showSettings = false; personalizationOnly = false; privacyOnly = false },
+            personalizationOnly = personalizationOnly,
+            privacyOnly = privacyOnly
         )
     }
 
