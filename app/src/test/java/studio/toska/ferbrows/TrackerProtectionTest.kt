@@ -10,6 +10,14 @@ class TrackerProtectionTest {
         assertTrue(TrackerProtection.shouldBlock("pixel.facebook.com"))
     }
 
+    @Test fun adBlockingStrengthsFilterProgressivelyMoreHosts() {
+        assertTrue(AdBlocker.shouldBlock("ads.doubleclick.net", AdBlockLevel.LOW))
+        assertTrue(AdBlocker.shouldBlock("ads.pubmatic.com", AdBlockLevel.MEDIUM))
+        assertFalse(AdBlocker.shouldBlock("ads.pubmatic.com", AdBlockLevel.LOW))
+        assertTrue(AdBlocker.shouldBlock("www.google-analytics.com", AdBlockLevel.MAXIMUM))
+        assertFalse(AdBlocker.shouldBlock("www.google-analytics.com", AdBlockLevel.MEDIUM))
+    }
+
     @Test fun doesNotBlockOrdinaryOrLookalikeHosts() {
         assertFalse(TrackerProtection.shouldBlock("example.com"))
         assertFalse(TrackerProtection.shouldBlock("notgoogle-analytics.com"))

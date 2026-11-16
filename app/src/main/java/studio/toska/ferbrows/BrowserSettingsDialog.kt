@@ -92,7 +92,12 @@ fun BrowserSettingsDialog(
                                     unfocusedBorderColor = PanelSoft,
                                     focusedTextColor = White,
                                     unfocusedTextColor = White,
-                                    cursorColor = Lime
+                                    focusedLabelColor = Lime,
+                                    unfocusedLabelColor = Muted,
+                                    focusedPlaceholderColor = Muted,
+                                    unfocusedPlaceholderColor = Muted,
+                                    cursorColor = Lime,
+                                    focusedContainerColor = Panel, unfocusedContainerColor = Panel
                                 )
                             )
                         }
@@ -100,9 +105,19 @@ fun BrowserSettingsDialog(
                     }
                     if (!personalizationOnly) {
                     SettingsGroup("ПРИВАТНОСТЬ И БЕЗОПАСНОСТЬ", Icons.Filled.PrivacyTip) {
-                        SettingsToggle("Защита от трекеров", "Блокировка известных отслеживающих доменов", draft.trackerProtectionEnabled) {
+                        SettingsToggle("Защита от трекеров", "Отдельная блокировка известных систем аналитики", draft.trackerProtectionEnabled) {
                             draft = draft.copy(trackerProtectionEnabled = it)
                         }
+                        HorizontalDivider(color = PanelSoft)
+                        SettingsAction(
+                            "Блокировщик рекламы",
+                            draft.adBlockLevel.label,
+                            draft.adBlockLevel.description,
+                            onClick = {
+                                val levels = AdBlockLevel.values()
+                                draft = draft.copy(adBlockLevel = levels[(levels.indexOf(draft.adBlockLevel) + 1) % levels.size])
+                            }
+                        )
                         HorizontalDivider(color = PanelSoft)
                         SettingsToggle("JavaScript", "Необходим для работы многих сайтов", draft.javaScriptEnabled) {
                             draft = draft.copy(javaScriptEnabled = it)
