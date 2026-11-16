@@ -655,7 +655,9 @@ private fun FerBrowsApp() {
                         }
                     },
                     onTabs = { openTabOverview() },
-                    tabCount = tabs.size
+                    tabCount = tabs.size,
+                    compact = compactBrowserChrome,
+                    reducedMotion = browserSettings.reducedMotion
                 )
             }
         }
