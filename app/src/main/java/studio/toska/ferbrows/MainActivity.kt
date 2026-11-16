@@ -553,22 +553,30 @@ private fun FerBrowsApp() {
                     .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
                     .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
             ) {
+                val compactBrowserChrome = currentUrl.isNotBlank() && !tabDialog && !showSettings &&
+                    !showBookmarks && !showHistory && !showDownloads
+
                 Header(
                     onNewTab = { addTab() },
                     onTabs = { openTabOverview() },
                     onMenu = { menuDialog = true },
-                    networkOnline = networkOnline
+                    networkOnline = networkOnline,
+                    compact = compactBrowserChrome
                 )
 
-                TabStrip(
-                    tabs = tabs,
-                    activeId = activeTabId,
-                    onSelect = { tab ->
-                        switchTo(tab)
-                    },
-                    onClose = { tab -> closeTab(tab) },
-                    reducedMotion = browserSettings.reducedMotion
-                )
+                AnimatedVisibility(
+                    visible = !compactBrowserChrome,
+                    enter = if (browserSettings.reducedMotion) EnterTransition.None else fadeIn(),
+                    exit = if (browserSettings.reducedMotion) ExitTransition.None else fadeOut()
+                ) {
+                    TabStrip(
+                        tabs = tabs,
+                        activeId = activeTabId,
+                        onSelect = { tab -> switchTo(tab) },
+                        onClose = { tab -> closeTab(tab) },
+                        reducedMotion = browserSettings.reducedMotion
+                    )
+                }
 
                 AddressBar(
                     value = address,
@@ -589,7 +597,8 @@ private fun FerBrowsApp() {
                             if (currentUrl !in bookmarks) { bookmarks.add(currentUrl); persistBookmarks() }
                         }
                     },
-                    reducedMotion = browserSettings.reducedMotion
+                    reducedMotion = browserSettings.reducedMotion,
+                    compact = compactBrowserChrome
                 )
 
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
