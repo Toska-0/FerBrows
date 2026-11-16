@@ -16,6 +16,8 @@ class TrackerProtectionTest {
     @Test fun adBlockingStrengthsFilterProgressivelyMoreHosts() {
         assertTrue(AdBlocker.shouldBlock("ads.doubleclick.net", AdBlockLevel.LOW))
         assertTrue(AdBlocker.shouldBlock("ads.pubmatic.com", AdBlockLevel.MEDIUM))
+        assertTrue(AdBlocker.shouldBlock("browser.sentry-cdn.com", AdBlockLevel.MEDIUM))
+        assertTrue(AdBlocker.shouldBlock("notify.bugsnag.com", AdBlockLevel.MEDIUM))
         assertFalse(AdBlocker.shouldBlock("ads.pubmatic.com", AdBlockLevel.LOW))
         assertTrue(AdBlocker.shouldBlock("www.google-analytics.com", AdBlockLevel.MAXIMUM))
         assertFalse(AdBlocker.shouldBlock("www.google-analytics.com", AdBlockLevel.MEDIUM))
