@@ -155,13 +155,13 @@ internal object AdBlockFilterEngine {
             val anchoredHost = pattern.startsWith("||")
             val host = if (anchoredHost) pattern.removePrefix("||").takeWhile { it != '^' && it != '/' && it != '*' && it != '|' } else ""
             val tail = if (anchoredHost) pattern.removePrefix("||").removePrefix(host) else pattern
-            val out = StringBuilder(if (anchoredHost) "^https?://(?:[^/]+\\\\.)?" + Regex.escape(host) else "^")
+            val out = StringBuilder(if (anchoredHost) "^https?://(?:[^/]+\\.)?" + Regex.escape(host) else "^")
             tail.forEachIndexed { index, ch ->
                 when (ch) {
                     '*' -> out.append(".*")
                     '^' -> out.append("(?:[^A-Za-z0-9_.%-]|$)")
-                    '|' -> if (!anchoredHost && index == 0) out.append("^") else if (index == tail.lastIndex) out.append("$") else out.append("\\\\|")
-                    else -> { if (ch in ".+?()[]{}\\\\\\\\") out.append('\\\\'); out.append(ch) }
+                    '|' -> if (!anchoredHost && index == 0) out.append("^") else if (index == tail.lastIndex) out.append("$") else out.append("\\|")
+                    else -> { if (ch in ".+?()[]{}\\") out.append('\\'); out.append(ch) }
                 }
             }
             Regex(out.toString(), RegexOption.IGNORE_CASE)
@@ -220,7 +220,7 @@ internal object AdBlockFilterEngine {
         if (selectors.isEmpty()) return null
         val css = selectors.joinToString(",") { it.replace("</style", "<\\/style", ignoreCase = true) }
         val escaped = css.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ")
-        return """(function(){try{var s='\${escaped}';var id='ferbrows-filter-css';var add=function(){var old=document.getElementById(id);if(old)return;var st=document.createElement('style');st.id=id;st.textContent=s+'{display:none!important;visibility:hidden!important;max-height:0!important;min-height:0!important;overflow:hidden!important}';(document.head||document.documentElement).appendChild(st);};add();if(!window.__ferBrowsCosmetic){window.__ferBrowsCosmetic=1;new MutationObserver(function(){add();}).observe(document.documentElement,{childList:true,subtree:true});}}catch(e){}})();"""
+        return """(function(){try{var s=\'""" + escaped + """\';var id=\'ferbrows-filter-css\';var add=function(){var old=document.getElementById(id);if(old)return;var st=document.createElement(\'style\');st.id=id;st.textContent=s+\'{display:none!important;visibility:hidden!important;max-height:0!important;min-height:0!important;overflow:hidden!important}\';(document.head||document.documentElement).appendChild(st);};add();if(!window.__ferBrowsCosmetic){window.__ferBrowsCosmetic=1;new MutationObserver(function(){add();}).observe(document.documentElement,{childList:true,subtree:true});}}catch(e){}})();"""
     }
 
     private fun isLikelyAdImage(url: String): Boolean {
