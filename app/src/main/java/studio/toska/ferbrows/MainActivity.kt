@@ -90,7 +90,6 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tab
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -1157,7 +1156,7 @@ private fun FerBrowsApp() {
                                     }) { Text("Удалить", color = Color(0xFFFF7777)) }
                                 }
                             }
-                            Divider(color = PanelSoft)
+                            Box(Modifier.fillMaxWidth().height(1.dp).background(PanelSoft))
                         }
                     }
                 }
