@@ -287,13 +287,37 @@ private fun FerBrowsApp() {
             setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
                 try {
                     val downloadUri = Uri.parse(url)
-                    val safeMimeType = mimeType?.takeIf { it.isNotBlank() } ?: "application/octet-stream"
-                    val guessedName = android.webkit.URLUtil.guessFileName(url, contentDisposition, safeMimeType)
-                    val safeName = guessedName
+                    val reportedMimeType = mimeType?.substringBefore(';')?.trim()?.takeIf { it.isNotBlank() }
+                    val urlFileName = downloadUri.lastPathSegment.orEmpty()
+                    val guessedName = android.webkit.URLUtil.guessFileName(url, contentDisposition, reportedMimeType ?: "application/octet-stream")
+
+                    // Some servers label APK downloads as application/octet-stream (or even
+                    // application/zip), which makes URLUtil append .bin/.zip. Prefer an APK
+                    // filename from the URL or Content-Disposition and normalize its MIME type.
+                    val dispositionApkName = contentDisposition
+                        ?.let { android.webkit.URLUtil.guessFileName(url, it, "application/vnd.android.package-archive") }
+                        ?.takeIf { it.substringBefore('?').endsWith(".apk", ignoreCase = true) }
+                    val urlApkName = urlFileName.takeIf { it.substringBefore('?').endsWith(".apk", ignoreCase = true) }
+                    val isApk = reportedMimeType.equals("application/vnd.android.package-archive", ignoreCase = true) ||
+                        dispositionApkName != null || urlApkName != null
+                    val preferredName = when {
+                        dispositionApkName != null -> dispositionApkName
+                        urlApkName != null -> urlApkName
+                        isApk -> guessedName.substringBeforeLast('.', guessedName) + ".apk"
+                        else -> guessedName
+                    }
+                    val safeMimeType = if (isApk) "application/vnd.android.package-archive"
+                        else reportedMimeType ?: "application/octet-stream"
+                    val safeName = preferredName
                         .filterNot { it.code < 32 || it.code in listOf(47, 92, 58, 42, 63, 34, 60, 62, 124) }
                         .trim()
                         .take(180)
-                        .ifBlank { "download" }
+                        .ifBlank { if (isApk) "download.apk" else "download" }
+                        .let { name ->
+                            if (isApk && !name.endsWith(".apk", ignoreCase = true)) {
+                                name.substringBeforeLast('.', name) + ".apk"
+                            } else name
+                        }
                     val request = DownloadManager.Request(downloadUri)
                         .setTitle(safeName)
                         .setDescription("Загрузка через FerBrows")
