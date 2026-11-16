@@ -67,6 +67,17 @@ class BrowserDownloadsStore(context: Context) {
         prefs.edit().putStringSet("ids", ids).apply()
     }
 
+    fun clearCompleted() {
+        val completedIds = query()
+            .filter { it.status == DownloadManager.STATUS_SUCCESSFUL || it.status == DownloadManager.STATUS_FAILED }
+            .map { it.id }
+        if (completedIds.isEmpty()) return
+        completedIds.forEach { manager.remove(it) }
+        val ids = prefs.getStringSet("ids", emptySet()).orEmpty().toMutableSet()
+        completedIds.forEach { ids.remove(it.toString()) }
+        prefs.edit().putStringSet("ids", ids).apply()
+    }
+
     companion object {
         const val STATUS_PENDING = DownloadManager.STATUS_PENDING
         const val STATUS_RUNNING = DownloadManager.STATUS_RUNNING
