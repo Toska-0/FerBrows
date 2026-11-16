@@ -25,6 +25,11 @@ class BrowserSettingsStoreTest {
     }
 
     @Test
+    fun defaultsToMediumAdBlockingForExistingInstallations() {
+        assertEquals(AdBlockLevel.MEDIUM, BrowserSettingsStore(context).load().adBlockLevel)
+    }
+
+    @Test
     fun persistsPersonalizationPreferences() {
         val store = BrowserSettingsStore(context)
         val expected = BrowserSettings(
@@ -32,7 +37,8 @@ class BrowserSettingsStoreTest {
             compactInterface = true,
             swipeNavigationEnabled = false,
             accentColor = "#55D6FF",
-            theme = BrowserTheme.LIGHT
+            theme = BrowserTheme.LIGHT,
+            adBlockLevel = AdBlockLevel.MAXIMUM
         )
 
         store.save(expected)
@@ -43,5 +49,6 @@ class BrowserSettingsStoreTest {
         assertEquals(expected.swipeNavigationEnabled, restored.swipeNavigationEnabled)
         assertEquals(expected.accentColor, restored.accentColor)
         assertEquals(expected.theme, restored.theme)
+        assertEquals(expected.adBlockLevel, restored.adBlockLevel)
     }
 }
