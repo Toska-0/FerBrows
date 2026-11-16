@@ -17,6 +17,7 @@ import android.content.Context
 import android.os.Environment
 import android.widget.Toast
 import java.io.ByteArrayInputStream
+import java.util.concurrent.atomic.AtomicBoolean
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -168,6 +169,7 @@ private fun FerBrowsApp() {
     var showOnboarding by remember { mutableStateOf(!onboardingPrefs.getBoolean("completed", false)) }
     val settingsStore = remember { BrowserSettingsStore(context) }
     var browserSettings by remember { mutableStateOf(settingsStore.load()) }
+    val trackerProtectionEnabled = remember { AtomicBoolean(browserSettings.trackerProtectionEnabled) }
     val store = remember { BrowserStore(context) }
     val connectivityManager = remember { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
     DisposableEffect(connectivityManager) {
@@ -204,6 +206,7 @@ private fun FerBrowsApp() {
     fun persistHistory() = store.saveHistory(history.toList())
 
     fun openTabOverview() {
+        tabPreviews.values.forEach { runCatching { it.recycle() } }
         val snapshots = mutableMapOf<Int, Bitmap>()
         webViews.forEach { (id, view) ->
             runCatching {
@@ -334,7 +337,7 @@ private fun FerBrowsApp() {
             }
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
-                    if (browserSettings.trackerProtectionEnabled && TrackerProtection.shouldBlock(request?.url?.host)) {
+                    if (trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(request?.url?.host)) {
                         return android.webkit.WebResourceResponse(
                             "text/plain", "UTF-8", 204, "Blocked by FerBrows tracker protection",
                             emptyMap(), ByteArrayInputStream(ByteArray(0))
@@ -345,11 +348,19 @@ private fun FerBrowsApp() {
 
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val uri = request?.url ?: return false
-                    val scheme = uri.scheme?.lowercase() ?: return false
+                    val scheme = uri.scheme?.lowercase() ?: return true
                     if (scheme == "http" || scheme == "https") return false
+                    if (scheme !in setOf("mailto", "tel", "sms", "smsto", "geo", "intent")) return true
                     return try {
-                        val intent = if (scheme == "intent") Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME) else Intent(Intent.ACTION_VIEW, uri)
-                        context.startActivity(intent); true
+                        val intent = if (scheme == "intent") {
+                            Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
+                                addCategory(Intent.CATEGORY_BROWSABLE)
+                                component = null
+                                selector = null
+                            }
+                        } else Intent(Intent.ACTION_VIEW, uri)
+                        if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
+                        true
                     } catch (_: Exception) { true }
                 }
 
@@ -376,6 +387,8 @@ private fun FerBrowsApp() {
                 override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: android.webkit.WebResourceResponse?) {
                     if (request?.isForMainFrame == true && activeTabId == tabId && (errorResponse?.statusCode ?: 200) >= 400) {
                         pageError = "Ошибка сервера: HTTP ${errorResponse?.statusCode}"
+                        loading = false
+                        progress = 100
                     }
                 }
 
@@ -658,13 +671,13 @@ private fun FerBrowsApp() {
             tabs = tabs.toList(),
             activeId = activeTabId,
             previews = tabPreviews,
-            onSelect = { tab -> switchTo(tab); tabDialog = false; tabPreviews = emptyMap() },
+            onSelect = { tab -> switchTo(tab); tabDialog = false; tabPreviews.values.forEach { runCatching { it.recycle() } }; tabPreviews = emptyMap() },
             onClose = { tab ->
                 closeTab(tab)
                 tabPreviews = tabPreviews - tab.id
             },
-            onNewTab = { addTab(); tabDialog = false; tabPreviews = emptyMap() },
-            onDismiss = { tabDialog = false; tabPreviews = emptyMap() }
+            onNewTab = { addTab(); tabDialog = false; tabPreviews.values.forEach { runCatching { it.recycle() } }; tabPreviews = emptyMap() },
+            onDismiss = { tabDialog = false; tabPreviews.values.forEach { runCatching { it.recycle() } }; tabPreviews = emptyMap() }
         )
     }
 
@@ -797,6 +810,7 @@ private fun FerBrowsApp() {
             settings = browserSettings,
             onSave = { updated ->
                 browserSettings = updated
+                trackerProtectionEnabled.set(updated.trackerProtectionEnabled)
                 settingsStore.save(updated)
                 webViews.values.forEach { it.settings.javaScriptEnabled = updated.javaScriptEnabled }
             },
@@ -809,10 +823,13 @@ private fun FerBrowsApp() {
             },
             onClearSiteData = {
                 webViews.values.forEach { it.clearCache(true); it.clearFormData() }
-                android.webkit.CookieManager.getInstance().removeAllCookies(null)
-                android.webkit.CookieManager.getInstance().flush()
-                android.webkit.WebStorage.getInstance().deleteAllData()
-                Toast.makeText(context, "Кэш, cookies и данные сайтов очищены", Toast.LENGTH_SHORT).show()
+                android.webkit.CookieManager.getInstance().removeAllCookies {
+                    android.webkit.CookieManager.getInstance().flush()
+                    android.webkit.WebStorage.getInstance().deleteAllData()
+                    (context as? android.app.Activity)?.runOnUiThread {
+                        Toast.makeText(context, "Кэш, cookies и данные сайтов очищены", Toast.LENGTH_SHORT).show()
+                    }
+                }
             },
             onDismiss = { showSettings = false }
         )
