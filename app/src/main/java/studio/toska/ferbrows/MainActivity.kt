@@ -38,6 +38,8 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -566,8 +568,8 @@ private fun FerBrowsApp() {
 
                 AnimatedVisibility(
                     visible = !compactBrowserChrome,
-                    enter = if (browserSettings.reducedMotion) EnterTransition.None else fadeIn(),
-                    exit = if (browserSettings.reducedMotion) ExitTransition.None else fadeOut()
+                    enter = if (browserSettings.reducedMotion) EnterTransition.None else expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                    exit = if (browserSettings.reducedMotion) ExitTransition.None else shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
                 ) {
                     TabStrip(
                         tabs = tabs,
