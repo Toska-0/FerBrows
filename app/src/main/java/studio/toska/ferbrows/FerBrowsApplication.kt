@@ -41,14 +41,22 @@ object AdBlockEngine {
         val model = filter.viewModel
         viewModel = model
 
-        model.filters.observeForever { loaded ->
-            if (loaded != null) syncSubscriptions(model, loaded.values)
-        }
         if (!filter.hasInstallation) {
             subscriptions.forEach { subscription ->
                 val added = model.addFilter(subscription.name, subscription.url)
                 model.setFilterEnabled(added.id, isEnabled(subscription))
                 model.download(added.id)
+            }
+        }
+
+        val syncing = java.util.concurrent.atomic.AtomicBoolean(false)
+        model.filters.observeForever { loaded ->
+            if (loaded != null && syncing.compareAndSet(false, true)) {
+                try {
+                    syncSubscriptions(model, loaded.values)
+                } finally {
+                    syncing.set(false)
+                }
             }
         }
     }
