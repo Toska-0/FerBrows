@@ -42,28 +42,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, networkOnline: Boolean = true) {
+fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, networkOnline: Boolean = true, compact: Boolean = false) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 3.dp),
+        modifier = Modifier.fillMaxWidth().animateContentSize().padding(start = if (compact) 10.dp else 16.dp, end = 6.dp, top = if (compact) 0.dp else 4.dp, bottom = if (compact) 0.dp else 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(Lime), contentAlignment = Alignment.Center) {
-            Text("F", color = Background, fontSize = 20.sp, fontWeight = FontWeight.Black)
+        AnimatedVisibility(visible = !compact, enter = fadeIn(), exit = fadeOut()) {
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(Lime), contentAlignment = Alignment.Center) {
+                    Text("F", color = Background, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                }
+                Column(Modifier.weight(1f).padding(start = 10.dp)) {
+                    Text("FerBrows", color = White, fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
+                    Text("FAST · SIMPLE · YOURS", color = Muted, fontSize = 7.sp, letterSpacing = 1.2.sp)
+                }
+                Box(
+                    Modifier.clip(RoundedCornerShape(20.dp)).background(if (networkOnline) Green.copy(alpha = 0.10f) else Color(0xFFFFB454).copy(alpha = 0.12f))
+                        .padding(horizontal = 7.dp, vertical = 4.dp)
+                ) {
+                    Text(if (networkOnline) "ONLINE" else "ОФЛАЙН", color = if (networkOnline) Green else Color(0xFFFFB454), fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
+                }
+                Spacer(Modifier.width(4.dp))
+            }
         }
-        Column(Modifier.weight(1f).padding(start = 10.dp)) {
-            Text("FerBrows", color = White, fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
-            Text("FAST · SIMPLE · YOURS", color = Muted, fontSize = 7.sp, letterSpacing = 1.2.sp)
-        }
-        Box(
-            Modifier.clip(RoundedCornerShape(20.dp)).background(if (networkOnline) Green.copy(alpha = 0.10f) else Color(0xFFFFB454).copy(alpha = 0.12f))
-                .padding(horizontal = 7.dp, vertical = 4.dp)
-        ) {
-            Text(if (networkOnline) "ONLINE" else "ОФЛАЙН", color = if (networkOnline) Green else Color(0xFFFFB454), fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
-        }
-        Spacer(Modifier.width(4.dp))
-        IconButton(onClick = onNewTab) { Icon(Icons.Filled.Add, "Новая вкладка", tint = Lime) }
-        IconButton(onClick = onTabs) { Icon(Icons.Filled.Tab, "Вкладки", tint = White) }
-        IconButton(onClick = onMenu) { Icon(Icons.Filled.MoreVert, "Меню", tint = White) }
+        IconButton(onClick = onNewTab, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) { Icon(Icons.Filled.Add, "Новая вкладка", tint = Lime, modifier = Modifier.size(if (compact) 19.dp else 24.dp)) }
+        IconButton(onClick = onTabs, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) { Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.size(if (compact) 19.dp else 24.dp)) }
+        IconButton(onClick = onMenu, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) { Icon(Icons.Filled.MoreVert, "Меню", tint = White, modifier = Modifier.size(if (compact) 19.dp else 24.dp)) }
     }
 }
 
@@ -105,11 +109,12 @@ fun AddressBar(
     onGo: () -> Unit,
     onRefresh: () -> Unit,
     onBookmark: () -> Unit,
-    reducedMotion: Boolean = false
+    reducedMotion: Boolean = false,
+    compact: Boolean = false
 ) {
-    Column(Modifier.padding(horizontal = 12.dp, vertical = 5.dp)) {
+    Column(Modifier.animateContentSize().padding(horizontal = 12.dp, vertical = if (compact) 2.dp else 5.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(17.dp))
+            modifier = Modifier.fillMaxWidth().height(if (compact) 38.dp else 44.dp).clip(RoundedCornerShape(if (compact) 14.dp else 17.dp))
                 .background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(17.dp)).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
