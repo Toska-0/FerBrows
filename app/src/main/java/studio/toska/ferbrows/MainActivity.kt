@@ -160,6 +160,7 @@ private fun FerBrowsApp() {
     var showBookmarks by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var personalizationOnly by remember { mutableStateOf(false) }
     var showDownloads by remember { mutableStateOf(false) }
     val downloadsStore = remember { BrowserDownloadsStore(context) }
     var downloads by remember { mutableStateOf(downloadsStore.query()) }
@@ -618,8 +619,9 @@ private fun FerBrowsApp() {
                     .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
                     .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
             ) {
-                val compactBrowserChrome = currentUrl.isNotBlank() && !tabDialog && !showSettings &&
-                    !showBookmarks && !showHistory && !showDownloads
+                val compactBrowserChrome = !tabDialog && !showSettings &&
+                    !showBookmarks && !showHistory && !showDownloads &&
+                    (browserSettings.compactInterface || currentUrl.isNotBlank())
 
                 Header(
                     onNewTab = { addTab() },
@@ -753,7 +755,13 @@ private fun FerBrowsApp() {
                         showDownloads = true
                         menuDialog = false
                     }
+                    MenuRow("Персонализация", "Компактный интерфейс и анимации") {
+                        personalizationOnly = true
+                        showSettings = true
+                        menuDialog = false
+                    }
                     MenuRow("Настройки", "Поиск, домашняя страница, приватность и данные") {
+                        personalizationOnly = false
                         showSettings = true
                         menuDialog = false
                     }
@@ -887,7 +895,8 @@ private fun FerBrowsApp() {
                     }
                 }
             },
-            onDismiss = { showSettings = false }
+            onDismiss = { showSettings = false; personalizationOnly = false },
+            personalizationOnly = personalizationOnly
         )
     }
 
