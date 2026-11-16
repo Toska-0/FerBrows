@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -51,17 +52,27 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, countryName: String = "Определение…", countryFlag: String = "🌐", compact: Boolean = false) {
-    Row(
-        modifier = Modifier.fillMaxWidth().animateContentSize().height(if (compact) 42.dp else 52.dp).padding(start = if (compact) 10.dp else 16.dp, end = 6.dp, top = if (compact) 0.dp else 4.dp, bottom = if (compact) 0.dp else 3.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        AnimatedVisibility(
-            visible = !compact,
-            modifier = Modifier.weight(1f),
-            enter = fadeIn(tween(220)) + expandHorizontally(animationSpec = tween(320), expandFrom = Alignment.End),
-            exit = fadeOut(tween(150)) + shrinkHorizontally(animationSpec = tween(320), shrinkTowards = Alignment.End)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val brandWidth by animateDpAsState(
+            targetValue = if (compact) 0.dp else (maxWidth - 140.dp).coerceAtLeast(0.dp),
+            animationSpec = tween(320),
+            label = "headerBrandWidth"
+        )
+        val brandAlpha by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = if (compact) 0f else 1f,
+            animationSpec = tween(180),
+            label = "headerBrandAlpha"
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .height(if (compact) 42.dp else 52.dp)
+                .padding(start = 10.dp, end = 6.dp, top = if (compact) 0.dp else 4.dp, bottom = if (compact) 0.dp else 3.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.width(brandWidth).clipToBounds().alpha(brandAlpha),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(Lime), contentAlignment = Alignment.Center) {
                     Text("F", color = Background, fontSize = 20.sp, fontWeight = FontWeight.Black)
                 }
@@ -80,14 +91,15 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, country
                 }
                 Spacer(Modifier.width(4.dp))
             }
-        }
-        IconButton(onClick = onNewTab, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) { Icon(Icons.Filled.Add, "Новая вкладка", tint = Lime, modifier = Modifier.size(if (compact) 19.dp else 24.dp)) }
-        IconButton(onClick = onTabs, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) { Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.size(if (compact) 19.dp else 24.dp)) }
-        IconButton(
-            onClick = onMenu,
-            modifier = Modifier.padding(start = 2.dp).size(if (compact) 40.dp else 44.dp)
-        ) {
-            Icon(Icons.Filled.MoreVert, "Меню", tint = Lime, modifier = Modifier.size(23.dp))
+            IconButton(onClick = onNewTab, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) {
+                Icon(Icons.Filled.Add, "Новая вкладка", tint = Lime, modifier = Modifier.size(if (compact) 19.dp else 24.dp))
+            }
+            IconButton(onClick = onTabs, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) {
+                Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.size(if (compact) 19.dp else 24.dp))
+            }
+            IconButton(onClick = onMenu, modifier = Modifier.padding(start = 2.dp).size(if (compact) 40.dp else 44.dp)) {
+                Icon(Icons.Filled.MoreVert, "Меню", tint = Lime, modifier = Modifier.size(23.dp))
+            }
         }
     }
 }
