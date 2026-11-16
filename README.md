@@ -1,103 +1,97 @@
 # FerBrows
 
-FerBrows is an Android browser prototype with a dark AMOLED interface and lime accents. It uses the Chromium/Blink engine supplied by Android System WebView.
+**FerBrows — лёгкий браузер для Android с аккуратным интерфейсом, полезными инструментами и вниманием к приватности.**
 
-## Features
+Он создан для тех, кому нужен удобный браузер без обязательного аккаунта, навязчивой синхронизации и перегруженного интерфейса. Открывайте сайты, держите вкладки в порядке, сохраняйте закладки и управляйте своими данными прямо на устройстве.
 
-- Multiple tabs with one WebView instance per tab and explicit Compose identity.
-- Ordinary tab metadata and selected tab restored after process restart; WebView state is saved where supported and falls back to the last URL.
-- Back, forward, reload, home and HTTP(S) address/search input.
-- Search provider selection: Google, DuckDuckGo or Bing.
-- Editable/reorderable/removable bookmarks, with JSON import and export through Android's document picker.
-- Tab groups with locally persisted names.
-- Edge-swipe back/forward navigation, configurable in personalization.
-- Page screenshot capture to `Pictures/FerBrows` on Android 10+.
-- Explicit page translation through Google Translate.
-- Browsing history with title, visit time, search and clear controls.
-- Download list with live progress, open, remove and clear-completed actions, backed by Android DownloadManager; website file chooser.
-- Main-frame navigation errors and a validated offline-network warning shown in the browser.
-- VPN-aware country badge based on the public IP address, with country flag and localized name.
-- In-app GitHub Releases checker and APK updater with visible download progress and Android's confirmation-based package installer.
-- Animated tab selection feedback without discarding each tab's WebView state.
-- Private tabs backed by AndroidX WebKit multi-profile when supported.
-- Optional blocking of a small built-in list of known advertising and analytics hosts.
-- Safe Browsing where supported by the installed WebView provider.
-- JavaScript, homepage, search provider and tracker protection controls. Dedicated privacy and personalization screens are available from the three-dot menu; personalization includes reduced motion, compact chrome, edge-swipe navigation and five accent colors. Site camera/microphone and geolocation requests are denied by default.
-- Controls to clear history, WebView cache, cookies and website storage.
+## Почему FerBrows?
 
-## Publishing browser updates
+- **Ваши данные остаются на устройстве.** У браузера нет учётной записи FerBrows и собственной облачной синхронизации. История, закладки, настройки и список обычных вкладок хранятся локально.
+- **Пароли под вашим контролем.** Добавляйте записи вручную в менеджер сохранённых паролей. Они хранятся в зашифрованном хранилище Android и защищены ключом Android Keystore. Браузер не перехватывает заполненные формы и не предлагает автоматически сохранять пароли.
+- **Приватные вкладки.** Они отделены от обычных вкладок и не попадают в историю и сохранённый список вкладок. Для приватного режима требуется поддержка отдельных профилей установленным Android WebView.
+- **Настраиваемый внешний вид.** Тёмная, светлая и системная темы, цветовые акценты и параметры компактности интерфейса.
+- **Удобная работа с вкладками.** Переключение между страницами, обзор открытых вкладок, группы вкладок и восстановление обычных вкладок после перезапуска.
+- **Всё нужное для повседневного просмотра.** Закладки с импортом и экспортом, история, загрузки с прогрессом, снимки страниц и перевод через Google Translate.
+- **Дополнительная защита.** Safe Browsing при поддержке WebView и необязательная блокировка части известных рекламных и аналитических доменов.
 
-The in-app updater checks the latest stable GitHub Release and looks for an attached APK asset. To publish an update, push a version tag such as `v0.4.0`. GitHub Actions builds the APK with the configured persistent signing key, runs tests, and attaches the signed APK to the release after the UI smoke tests pass. The tag version becomes the installed app's `versionName`; the CI run number supplies a monotonically increasing `versionCode`.
+## Возможности
 
-## Private browsing
+### Просмотр сайтов
+- Открытие сайтов и поиск через Google, DuckDuckGo или Bing.
+- Переход вперёд и назад, обновление страницы и домашний экран.
+- Несколько вкладок и наглядный обзор открытых страниц.
+- Группировка вкладок и сохранение их названий.
+- Жесты у края экрана для перехода назад и вперёд.
+- Автоматическое восстановление обычных вкладок после перезапуска приложения.
 
-Private tabs use a separate AndroidX WebKit profile when the installed WebView provider supports multi-profile. Private tabs are excluded from saved tabs, bookmarks and history. The private profile is deleted when the last private tab is closed or when FerBrows starts after an unclean termination. If multi-profile is unavailable, FerBrows reports that private tabs are unavailable rather than silently using the ordinary profile.
+### Закладки и история
+- Добавление, редактирование, перемещение и удаление закладок.
+- Импорт и экспорт закладок в JSON-файл.
+- История посещений с названием страницы и временем посещения.
+- Поиск по истории и её очистка.
 
-Private mode is not anonymity: websites, network operators, DNS providers, Android, the WebView provider and downloaded files may still expose or retain information. See [PRIVACY.md](PRIVACY.md).
+### Пароли и приватность
+- Ручное создание записей с названием, сайтом, логином, паролем и заметкой.
+- Локальное шифрование записей AES-GCM; ключ хранится в Android Keystore.
+- Ручной просмотр и копирование сохранённых данных.
+- Автозаполнение только для записи, сайт которой совпадает с текущим адресом.
+- Отсутствие автоматического сбора паролей из веб-форм.
+- Очистка истории, кеша, cookie и данных сайтов.
 
-## Privacy and security limits
+### Загрузки и инструменты
+- Список загрузок с отображением прогресса.
+- Открытие скачанных файлов и удаление загрузок.
+- Очистка завершённых и неудачных загрузок.
+- Снимок видимой области страницы с сохранением в Pictures/FerBrows.
+- Перевод открытой страницы через Google Translate.
+- Проверка обновлений и установка APK через стандартное подтверждение Android.
 
-FerBrows is not yet a fully hardened privacy browser. Tracker blocking is a small built-in hostname list, not a comprehensive or automatically updated filter list. Some trackers may pass and some site features may be affected. Safe Browsing is provider-dependent; it does not block trackers and does not make HTTP secure.
+## Темы и персонализация
 
-JavaScript is enabled by default for website compatibility and can be disabled in settings. File URL access is disabled, mixed content is blocked, and third-party cookies are disabled for the default profile. HTTPS encrypts traffic in transit but does not prove that a site itself is trustworthy. FerBrows provides no VPN, proxy, cloud sync or browser extension runtime. Page translation is an explicit hand-off to Google Translate; the page URL is sent to that service. Screenshots are saved locally to the Pictures/FerBrows gallery folder.
+Выберите подходящий режим:
+- **Тёмная** — тёмное оформление браузера.
+- **Светлая** — светлое оформление.
+- **Системная** — оформление вслед за настройками Android.
 
-## Architecture
+Также доступны цветовые акценты, компактный интерфейс, настройка жестов и уменьшение анимации. Для сайтов браузер использует системный механизм Android WebView: сайты с поддержкой цветовой схемы могут переключаться сами, а для остальных применяется доступное затемнение WebView.
 
-- `MainActivity.kt`: browser orchestration and WebView lifecycle.
-- `BrowserScreens.kt`: Compose browser interface.
-- `BrowserStore.kt`: persisted tabs, bookmarks and history.
-- `BrowserSettings.kt` / `BrowserSettingsDialog.kt`: browser preferences and settings UI.
-- `WelcomeDialog.kt`: first-run introduction.
-- `STORE_LISTING.md`: store listing draft and real-device screenshot checklist.
-- `BrowserDownloadsStore.kt` / `DownloadsDialog.kt`: tracked downloads and file actions.
-- `BookmarkEditDialog.kt`: bookmark editing.
-- `BrowserNavigation.kt`: URL/search input validation.
-- `BrowserTabReducer.kt`: deterministic tab transitions.
-- `TrackerProtection.kt`: built-in tracker hostname matching.
+## Установка
 
-## Build and test
+1. Откройте раздел [Releases](https://github.com/Toska-0/FerBrows/releases).
+2. Выберите последнюю стабильную версию FerBrows.
+3. Скачайте APK из вложений релиза.
+4. Откройте файл и подтвердите установку Android. При необходимости разрешите установку приложений из выбранного источника в настройках Android.
 
-Requirements: JDK 17, Gradle 8.9 and Android SDK 35.
+Устанавливайте APK только из официального репозитория FerBrows.
 
-```bash
-gradle --no-daemon testDebugUnitTest
-gradle --no-daemon connectedDebugAndroidTest
-gradle --no-daemon assembleDebug
-gradle --no-daemon assembleRelease
-```
+## Обновление
 
-The debug APK is created at `app/build/outputs/apk/debug/app-debug.apk`. CI uses its monotonically increasing run number as `versionCode`. When the persistent release key is configured, both Debug and Release use that same certificate and CI publishes a signed Release APK. Without the key, CI publishes only a test-only Debug APK and deliberately does not publish an unsigned Release APK.
+FerBrows поддерживает обновление поверх установленной версии. Если вы устанавливаете новую версию вручную, скачайте APK из последнего релиза и откройте его — **не удаляйте старую версию перед обновлением**.
 
-## Updating without uninstalling
+Удаление приложения стирает его локальные данные. Android также проверяет подпись APK: обновление должно быть собрано с тем же ключом подписи, что и установленная версия. Не устанавливайте тестовую Debug-сборку поверх обычной Release-сборки.
 
-FerBrows keeps the same Android application ID (`studio.toska.ferbrows` updates must be installed over the existing app. **Do not uninstall FerBrows to update it** — uninstalling deletes its private app data.
+## Что важно знать
 
-Android accepts an APK update only when its package ID matches, its `versionCode` is higher, and its signing certificate matches the installed build. Debug APKs and release APKs are signed with different keys. A release APK built without the configured signing secrets is unsigned and cannot update an already installed signed copy.
+FerBrows использует **Android System WebView** — компонент Android на базе Chromium/Blink. Движок обновляется вместе с установленным на устройстве WebView, а не поставляется отдельной копией внутри FerBrows.
 
-For repeatable release updates, configure these GitHub Actions repository secrets once:
-- `FERBROWS_KEYSTORE_BASE64`: base64-encoded private release keystore.
-- `FERBROWS_KEYSTORE_PASSWORD`
-- `FERBROWS_KEY_ALIAS`
-- `FERBROWS_KEY_PASSWORD`
+FerBrows не является VPN или средством полной анонимности. Приватные вкладки не скрывают активность от сайтов, интернет-провайдера, DNS-провайдера или самого устройства. Скачанные файлы могут оставаться на устройстве.
 
-Keep a secure offline backup of the keystore. Losing it prevents signing future compatible updates. Install the same signed release channel each time; do not switch between debug and release APKs. The in-app **Проверить обновления** menu item opens the project's GitHub Releases page. Install only the `FerBrows-release-update` artifact for normal use; `FerBrows-debug-test-only` is not the update channel. CI assigns a higher version code to every run, so Android will not reject the next build as an older version.
+Блокировка рекламы и трекеров использует небольшой встроенный список доменов. Это дополнительная мера, а не универсальный фильтр: некоторые запросы могут проходить, а отдельные функции сайтов могут работать иначе.
 
-## Continuous integration
+Камера, микрофон и геолокация для сайтов по умолчанию запрещены. Управление отдельными разрешениями для каждого сайта пока не предусмотрено.
 
-GitHub Actions runs unit tests and builds debug and release APK variants on pushes and pull requests to `main`. It also supports manual runs. Download the `FerBrows-android-apks` artifact from a successful workflow run.
+Облачной синхронизации, VPN, прокси и поддержки расширений в FerBrows нет. Это сделано осознанно: браузер не требует аккаунта и не отправляет ваши закладки, историю или записи менеджера паролей на собственный сервер.
 
-## Known gaps before a public release
+## Совместимость
 
-- Per-site permission controls (camera, microphone and geolocation are currently denied by default).
-- Broader Android/device/network test matrix beyond the initial Android 35 UI smoke tests.
-- A full architecture split of the browser orchestration currently in `MainActivity.kt`.
-- Production signing secrets and store listing screenshots/metadata.
-- Tracker filter maintenance and a review of WebView/provider privacy behavior.
+- Android 7.0 (API 24) и новее.
+- Для корректной работы сайтов рекомендуется поддерживать Android System WebView в актуальном состоянии.
+- Некоторые возможности, например отдельный профиль приватных вкладок, зависят от версии WebView на устройстве.
 
-## Engine note
+## Обратная связь
 
-FerBrows uses Android System WebView, whose rendering engine is Chromium/Blink. It is not a separately bundled Chromium build; the installed WebView provider supplies engine updates.
+Нашли ошибку или хотите предложить улучшение? [Создайте Issue на GitHub](https://github.com/Toska-0/FerBrows/issues).
 
-## Feedback
+---
 
-Report bugs and feature requests at https://github.com/Toska-0/FerBrows/issues.
+**FerBrows 1.0.0 · Toska Game Studio**
