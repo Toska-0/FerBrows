@@ -97,7 +97,7 @@ fun BrowserSettingsDialog(
                                     focusedPlaceholderColor = Muted,
                                     unfocusedPlaceholderColor = Muted,
                                     cursorColor = Lime,
-                                    containerColor = Panel
+                                    focusedContainerColor = Panel, unfocusedContainerColor = Panel
                                 )
                             )
                         }
