@@ -711,7 +711,7 @@ private fun FerBrowsApp() {
         if (tab.id == activeTabId) return
         if (browserSettings.reducedMotion) {
             tabTransitionJob.value?.cancel()
-            tabTransition.snapTo(0f)
+            tabTransitionJob.value = tabTransitionScope.launch { tabTransition.snapTo(0f) }
             val state = BrowserTabReducer.select(BrowserTabsState(tabs.toList(), activeTabId, nextTabId), tab.id)
             activeTabId = state.activeTabId
             homeVisibleTabId = if (tab.url.isBlank()) tab.id else -1
