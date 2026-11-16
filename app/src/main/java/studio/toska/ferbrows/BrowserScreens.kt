@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, networkOnline: Boolean = true, compact: Boolean = false) {
     Row(
-        modifier = Modifier.fillMaxWidth().animateContentSize().padding(start = if (compact) 10.dp else 16.dp, end = 6.dp, top = if (compact) 0.dp else 4.dp, bottom = if (compact) 0.dp else 3.dp),
+        modifier = Modifier.fillMaxWidth().animateContentSize().height(if (compact) 42.dp else 52.dp).padding(start = if (compact) 10.dp else 16.dp, end = 6.dp, top = if (compact) 0.dp else 4.dp, bottom = if (compact) 0.dp else 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AnimatedVisibility(visible = !compact, enter = fadeIn(), exit = fadeOut()) {
