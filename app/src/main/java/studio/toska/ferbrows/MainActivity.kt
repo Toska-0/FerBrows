@@ -162,6 +162,7 @@ private fun FerBrowsApp() {
     val credentialVault = remember { CredentialVault(context) }
     var pendingCredential by remember { mutableStateOf<SavedCredential?>(null) }
     var showCredentials by remember { mutableStateOf(false) }
+    var credentialListRefresh by remember { mutableIntStateOf(0) }
     var currentUrl by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var pageTitle by remember { mutableStateOf("Новая вкладка") }
@@ -1132,7 +1133,7 @@ private fun FerBrowsApp() {
     }
 
     if (showCredentials) {
-        val credentials = credentialVault.all()
+        val credentials = remember(showCredentials, credentialListRefresh) { credentialVault.all() }
         AlertDialog(
             onDismissRequest = { showCredentials = false },
             containerColor = Panel,
@@ -1152,8 +1153,7 @@ private fun FerBrowsApp() {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     TextButton(onClick = {
                                         credentialVault.remove(credential.origin, credential.username)
-                                        showCredentials = false
-                                        showCredentials = true
+                                        credentialListRefresh++
                                     }) { Text("Удалить", color = Color(0xFFFF7777)) }
                                 }
                             }
