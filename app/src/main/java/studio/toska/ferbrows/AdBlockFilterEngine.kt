@@ -140,10 +140,10 @@ internal object AdBlockFilterEngine {
         val includeDomains = domainParts.filter { it.isNotBlank() && !it.startsWith("~") }.map { it.lowercase(Locale.ROOT) }.toSet()
         val excludeDomains = domainParts.filter { it.startsWith("~") }.map { it.removePrefix("~").lowercase(Locale.ROOT) }.toSet()
         val thirdParty = when { "third-party" in options -> true; "~third-party" in options -> false; else -> null }
-        val hostSuffix = if (pattern.startsWith("||")) {
-            pattern.removePrefix("||").takeWhile { it != '^' && it != '/' && it != '*' && it != '|' }
-                .lowercase(Locale.ROOT).takeIf { it.contains('.') && it.all { ch -> ch.isLetterOrDigit() || ch == '.' || ch == '-' } }
-        } else null
+        val candidateHost = if (pattern.startsWith("||")) {
+            pattern.removePrefix("||").takeWhile { it != '^' && it != '/' && it != '*' && it != '|' }.lowercase(Locale.ROOT)
+        } else ""
+        val hostSuffix = candidateHost.takeIf { it.contains('.') && it.all { ch -> ch.isLetterOrDigit() || ch == '.' || ch == '-' } && (pattern == "||$it^" || pattern == "||$it") }
         val regex = if (hostSuffix == null) compilePattern(pattern) else null
         if (hostSuffix == null && regex == null) return null
         return NetworkRule(hostSuffix, regex, includeTypes, excludeTypes, includeDomains, excludeDomains, thirdParty, exception)
@@ -186,6 +186,7 @@ internal object AdBlockFilterEngine {
         val type = resourceType(accept)
         val thirdParty = pageHost.isNotEmpty() && !isSameSite(host, pageHost)
         var exceptionMatched = false
+        var blockMatched = false
         for (rule in networkRules) {
             if (rule.includeTypes.isNotEmpty() && type !in rule.includeTypes) continue
             if (type in rule.excludeTypes) continue
@@ -195,10 +196,11 @@ internal object AdBlockFilterEngine {
             val matches = if (rule.hostSuffix != null) domainMatches(host, rule.hostSuffix)
                 else rule.regex?.containsMatchIn(requestUrl) == true
             if (matches) {
-                if (rule.exception) exceptionMatched = true else if (!exceptionMatched) return true
+                if (rule.exception) exceptionMatched = true else blockMatched = true
             }
         }
         if (exceptionMatched) return false
+        if (blockMatched) return true
         return level == AdBlockLevel.MAXIMUM && TrackerProtection.shouldBlock(host)
     }
 
