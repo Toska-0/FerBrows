@@ -132,8 +132,8 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
             key(tab.id) {
                 val active = tab.id == activeId
                 val isClosing = tab.id in closingTabIds
-                val tabBackground by animateColorAsState(if (active) PanelSoft else Color(0xFF0A0E0A), tween(if (reducedMotion) 0 else 240), label = "tabBackground")
-                val tabBorder by animateColorAsState(if (active) Lime.copy(alpha = 0.52f) else Color(0xFF1B241B), tween(if (reducedMotion) 0 else 240), label = "tabBorder")
+                val tabBackground by animateColorAsState(if (active) PanelSoft else Panel, tween(if (reducedMotion) 0 else 240), label = "tabBackground")
+                val tabBorder by animateColorAsState(if (active) Lime.copy(alpha = 0.52f) else PanelSoft, tween(if (reducedMotion) 0 else 240), label = "tabBorder")
                 val tabDot by animateColorAsState(if (active) Lime else Muted, tween(if (reducedMotion) 0 else 240), label = "tabDot")
                 AnimatedVisibility(
                     visible = !isClosing,
@@ -377,7 +377,7 @@ fun BottomToolbar(
     val iconSize by animateDpAsState(if (compact) 18.dp else 25.dp, tween(duration), label = "toolbarIconSize")
     Row(
         Modifier.fillMaxWidth()
-            .background(Color(0xFF0B100B))
+            .background(Panel)
             .border(1.dp, PanelSoft)
             .padding(horizontal = horizontalPadding, vertical = verticalPadding)
             .animateContentSize(tween(duration)),
@@ -396,7 +396,7 @@ fun BottomToolbar(
                         .defaultMinSize(minWidth = if (compact) 18.dp else 20.dp, minHeight = if (compact) 18.dp else 20.dp)
                         .clip(CircleShape)
                         .background(Lime)
-                        .border(1.5.dp, Color(0xFF0B100B), CircleShape)
+                        .border(1.5.dp, Panel, CircleShape)
                         .padding(horizontal = 4.dp, vertical = 1.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -431,7 +431,7 @@ fun ToolbarButton(
         Icon(icon, description, tint = when {
             highlighted -> Lime
             enabled -> White
-            else -> Color(0xFF455045)
+            else -> Muted
         }, modifier = Modifier.size(iconSize))
     }
 }
