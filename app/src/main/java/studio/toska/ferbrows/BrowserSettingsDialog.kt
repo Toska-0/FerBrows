@@ -40,9 +40,9 @@ fun BrowserSettingsDialog(
     var draft by remember(settings) { mutableStateOf(settings) }
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)
     ) {
-        Surface(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), color = Background) {
+        Surface(Modifier.fillMaxSize(), color = Background) {
             Column(Modifier.fillMaxSize()) {
                 Row(
                     Modifier.fillMaxWidth().padding(start = 8.dp, end = 18.dp, top = 5.dp, bottom = 10.dp),
@@ -115,7 +115,7 @@ fun BrowserSettingsDialog(
                 }
                 Surface(color = Panel, shadowElevation = 8.dp) {
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 9.dp),
+                        Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 9.dp, bottom = 18.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp)) {
