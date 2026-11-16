@@ -9,7 +9,7 @@ object TrackerProtection {
         "connect.facebook.net", "pixel.facebook.com", "analytics.twitter.com",
         "static.ads-twitter.com", "scorecardresearch.com", "hotjar.com",
         "segment.io", "api.segment.io", "mixpanel.com", "amplitude.com",
-        "clarity.ms", "bat.bing.com", "taboola.com", "outbrain.com",
+        "clarity.ms", "bat.bing.com", "mc.yandex.ru", "metrika.yandex.ru", "metrika.yandex.com",\n        "taboola.com", "outbrain.com",
         "criteo.com", "adsrvr.org", "quantserve.com", "adnxs.com", "adform.net",
         "sentry.io", "browser.sentry-cdn.com", "ingest.sentry.io", "o0.ingest.sentry.io",
         "bugsnag.com", "notify.bugsnag.com", "sessions.bugsnag.com", "api.bugsnag.com",
