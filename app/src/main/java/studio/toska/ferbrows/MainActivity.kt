@@ -44,7 +44,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -115,6 +117,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -191,8 +195,10 @@ private fun FerBrowsApp() {
     var updateProgress by remember { mutableIntStateOf(0) }
     var updateFailed by remember { mutableStateOf(false) }
     var updateCheckRequested by remember { mutableIntStateOf(0) }
-    var tabSwitchOverlay by remember { mutableStateOf(false) }
-    var hasInitialTabSwitch by remember { mutableStateOf(false) }
+    var tabTransitionSnapshot by remember { mutableStateOf<Bitmap?>(null) }
+    var tabTransitionDirection by remember { mutableIntStateOf(-1) }
+    var tabTransitionToken by remember { mutableIntStateOf(0) }
+    val tabTransitionProgress = remember { Animatable(1f) }
     val downloadsStore = remember { BrowserDownloadsStore(context) }
     var downloads by remember { mutableStateOf(downloadsStore.query()) }
     var showExitConfirm by remember { mutableStateOf(false) }
@@ -201,7 +207,6 @@ private fun FerBrowsApp() {
     var showOnboarding by remember { mutableStateOf(!onboardingPrefs.getBoolean("completed", false)) }
     val settingsStore = remember { BrowserSettingsStore(context) }
     var browserSettings by remember { mutableStateOf(settingsStore.load()) }
-    val tabOverlayAlpha by animateFloatAsState(if (tabSwitchOverlay) 0.34f else 0f, animationSpec = tween(if (browserSettings.reducedMotion) 0 else 170), label = "tabSwitchOverlay")
     val accentColor = remember(browserSettings.accentColor) {
         runCatching { Color(android.graphics.Color.parseColor(browserSettings.accentColor)) }
             .getOrDefault(Color(0xFFC6FF1A))
@@ -653,13 +658,20 @@ private fun FerBrowsApp() {
         }
     }
 
-    LaunchedEffect(activeTabId) {
-        if (hasInitialTabSwitch) {
-            tabSwitchOverlay = true
-            delay(170)
-            tabSwitchOverlay = false
-        } else {
-            hasInitialTabSwitch = true
+    LaunchedEffect(tabTransitionToken) {
+        val snapshot = tabTransitionSnapshot
+        if (snapshot != null) {
+            if (browserSettings.reducedMotion) {
+                tabTransitionProgress.snapTo(1f)
+            } else {
+                tabTransitionProgress.snapTo(0f)
+                tabTransitionProgress.animateTo(1f, animationSpec = tween(360))
+            }
+            delay(24)
+            if (tabTransitionSnapshot === snapshot) {
+                tabTransitionSnapshot = null
+                snapshot.recycle()
+            }
         }
     }
 
@@ -709,6 +721,23 @@ private fun FerBrowsApp() {
         }
     }
     fun switchTo(tab: BrowserTab) {
+        if (tab.id == activeTabId) return
+        val previousIndex = tabs.indexOfFirst { it.id == activeTabId }
+        val targetIndex = tabs.indexOfFirst { it.id == tab.id }
+        val previousView = webViews[activeTabId]
+        val snapshot = if (currentUrl.isNotBlank() && previousView != null && previousView.width > 0 && previousView.height > 0) {
+            runCatching {
+                Bitmap.createBitmap(previousView.width, previousView.height, Bitmap.Config.ARGB_8888).also { bitmap ->
+                    previousView.draw(Canvas(bitmap))
+                }
+            }.getOrNull()
+        } else null
+        tabTransitionSnapshot?.let { old ->
+            if (old !== snapshot && !old.isRecycled) old.recycle()
+        }
+        tabTransitionSnapshot = snapshot
+        tabTransitionDirection = if (targetIndex >= previousIndex) -1 else 1
+        tabTransitionToken++
         val state = BrowserTabReducer.select(BrowserTabsState(tabs.toList(), activeTabId, nextTabId), tab.id)
         activeTabId = state.activeTabId
         persistTabs()
@@ -888,7 +917,13 @@ private fun FerBrowsApp() {
                     key(activeTabId) {
                         AndroidView(
                             factory = { webView },
-                            modifier = Modifier.fillMaxSize().alpha(if (currentUrl.isBlank()) 0f else 1f)
+                            modifier = Modifier.fillMaxSize()
+                                .alpha(if (currentUrl.isBlank()) 0f else 1f)
+                                .graphicsLayer {
+                                    translationX = if (tabTransitionSnapshot != null) {
+                                        -tabTransitionDirection * (1f - tabTransitionProgress.value) * size.width
+                                    } else 0f
+                                }
                         )
                     }
                     Column(modifier = Modifier.fillMaxSize()) {
@@ -901,8 +936,15 @@ private fun FerBrowsApp() {
                             HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled)
                         }
                     }
-                    if (tabOverlayAlpha > 0.01f) {
-                        Box(Modifier.fillMaxSize().graphicsLayer { alpha = tabOverlayAlpha }.background(Background))
+                    tabTransitionSnapshot?.let { snapshot ->
+                        Image(
+                            bitmap = snapshot.asImageBitmap(),
+                            contentDescription = null,
+                            contentScale = ContentScale.FillBounds,
+                            modifier = Modifier.fillMaxSize().graphicsLayer {
+                                translationX = tabTransitionDirection * tabTransitionProgress.value * size.width
+                            }
+                        )
                     }
                     if (pageError != null) {
                         Surface(
