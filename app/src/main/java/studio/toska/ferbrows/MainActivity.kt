@@ -290,7 +290,7 @@ private fun FerBrowsApp() {
                     val safeMimeType = mimeType?.takeIf { it.isNotBlank() } ?: "application/octet-stream"
                     val guessedName = android.webkit.URLUtil.guessFileName(url, contentDisposition, safeMimeType)
                     val safeName = guessedName
-                        .replace(Regex("[\\\\/:*?\\"<>|\\\\u0000-\\\\u001F]"), "_")
+                        .filterNot { it in "/\\\\:*?\\"<>|" || it.code < 32 }
                         .trim()
                         .take(180)
                         .ifBlank { "download" }
@@ -301,7 +301,7 @@ private fun FerBrowsApp() {
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                         .setAllowedOverMetered(true)
                         .setAllowedOverRoaming(true)
-                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, safeName)
+                        .also { downloadRequest ->\n                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {\n                                downloadRequest.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, safeName)\n                            } else {\n                                downloadRequest.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, safeName)\n                            }\n                        }
                         .addRequestHeader("User-Agent", userAgent.ifBlank { settings.userAgentString ?: "Mozilla/5.0" })
 
                     // Many download endpoints require the same session cookies as the opened page.
