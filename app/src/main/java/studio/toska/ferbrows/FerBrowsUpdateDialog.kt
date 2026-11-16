@@ -2,7 +2,6 @@ package studio.toska.ferbrows
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -33,10 +32,32 @@ fun FerBrowsUpdateDialog(
         containerColor = Panel,
         title = { Text("Доступно обновление", color = White, fontWeight = FontWeight.Bold) },
         text = {
-            Column(modifier = Modifier.heightIn(max = 340.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("FerBrows $version уже доступен. Обновление будет установлено поверх текущей версии.", color = Muted)
+            Column(
+                modifier = Modifier.heightIn(max = 340.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "FerBrows $version уже доступен. Обновление будет установлено поверх текущей версии.",
+                    color = Muted
+                )
                 Text("Что нового", color = White, fontWeight = FontWeight.SemiBold)
-                Text(releaseNotes.ifBlank { "Исправления ошибок и улучшения стабильности." }, color = Muted)
+
+                val notes = releaseNotes.ifBlank {
+                    "Исправления ошибок и улучшения стабильности."
+                }
+                notes.lineSequence().forEach { rawLine ->
+                    val line = rawLine.trim()
+                    if (line.isNotEmpty()) {
+                        // Lines prefixed with ## are bold section headings in release notes.
+                        val isHeading = line.startsWith("##")
+                        Text(
+                            text = if (isHeading) line.dropWhile { it == '#' }.trim() else line,
+                            color = if (isHeading) White else Muted,
+                            fontWeight = if (isHeading) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+
                 if (downloading) {
                     LinearProgressIndicator(
                         progress = progress.coerceIn(0, 100) / 100f,
@@ -46,17 +67,29 @@ fun FerBrowsUpdateDialog(
                     )
                     Text(if (progress > 0) "Загрузка: $progress%" else "Подготовка загрузки…", color = White)
                 }
-                if (failed) Text("Не удалось скачать APK. Проверь подключение и попробуй ещё раз.", color = androidx.compose.ui.graphics.Color(0xFFFFB454))
-                if (!downloading && !failed) Text("После загрузки Android попросит подтвердить установку.", color = Muted)
+                if (failed) {
+                    Text(
+                        "Не удалось скачать APK. Проверь подключение и попробуй ещё раз.",
+                        color = androidx.compose.ui.graphics.Color(0xFFFFB454)
+                    )
+                }
+                if (!downloading && !failed) {
+                    Text("После загрузки Android попросит подтвердить установку.", color = Muted)
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = if (downloading) onDismiss else if (progress >= 100) onInstall else onDownload, enabled = !downloading) {
+            TextButton(
+                onClick = if (downloading) onDismiss else if (progress >= 100) onInstall else onDownload,
+                enabled = !downloading
+            ) {
                 Text(if (progress >= 100) "Установить" else "Обновить", color = Lime)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !downloading) { Text("Позже", color = Muted) }
+            TextButton(onClick = onDismiss, enabled = !downloading) {
+                Text("Позже", color = Muted)
+            }
         }
     )
 }
