@@ -232,7 +232,7 @@ private fun FerBrowsApp() {
             val merged = (bookmarks.toList() + imported).distinct()
             bookmarks.clear()
             bookmarks.addAll(merged)
-            persistBookmarks()
+            store.saveBookmarks(merged)
             Toast.makeText(context, "Импортировано закладок: ${merged.size}", Toast.LENGTH_SHORT).show()
         }.onFailure {
             Toast.makeText(context, "Файл закладок повреждён или имеет неверный формат", Toast.LENGTH_LONG).show()
