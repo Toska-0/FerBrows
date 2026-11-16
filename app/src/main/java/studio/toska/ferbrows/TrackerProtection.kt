@@ -40,7 +40,7 @@ object AdBlocker {
         "serving-sys.com", "adsafeprotected.com", "moatads.com", "3lift.com",
         "sharethrough.com", "bidswitch.net", "contextweb.com", "advertising.com",
         "yieldmo.com", "inmobi.com", "applovin.com", "unity3d.com",
-        "lijit.com", "media.net", "undertone.com"
+        "lijit.com", "media.net", "undertone.com",\n        "sentry.io", "browser.sentry-cdn.com", "bugsnag.com"
     )
     private val maximumDomains = mediumDomains + setOf(
         "google-analytics.com", "googletagmanager.com", "connect.facebook.net",
