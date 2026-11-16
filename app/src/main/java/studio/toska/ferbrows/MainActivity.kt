@@ -43,6 +43,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -123,6 +125,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import java.net.URLEncoder
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import org.json.JSONArray
 
@@ -159,6 +163,8 @@ private fun FerBrowsApp() {
     var progress by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(false) }
     var networkOnline by remember { mutableStateOf(hasValidatedInternet(context)) }
+    var countryName by remember { mutableStateOf("Определение…") }
+    var countryFlag by remember { mutableStateOf("🌐") }
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
     var tabDialog by remember { mutableStateOf(false) }
@@ -172,6 +178,15 @@ private fun FerBrowsApp() {
     var personalizationOnly by remember { mutableStateOf(false) }
     var privacyOnly by remember { mutableStateOf(false) }
     var showDownloads by remember { mutableStateOf(false) }
+    var latestUpdate by remember { mutableStateOf<FerBrowsUpdate?>(null) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var updateDownloadId by remember { mutableStateOf<Long?>(null) }
+    var completedUpdateDownloadId by remember { mutableStateOf<Long?>(null) }
+    var updateProgress by remember { mutableIntStateOf(0) }
+    var updateFailed by remember { mutableStateOf(false) }
+    var updateCheckRequested by remember { mutableIntStateOf(0) }
+    var tabSwitchOverlay by remember { mutableStateOf(false) }
+    var hasInitialTabSwitch by remember { mutableStateOf(false) }
     val downloadsStore = remember { BrowserDownloadsStore(context) }
     var downloads by remember { mutableStateOf(downloadsStore.query()) }
     var showExitConfirm by remember { mutableStateOf(false) }
@@ -545,6 +560,66 @@ private fun FerBrowsApp() {
         }
     }
 
+    LaunchedEffect(Unit) {
+        val country = withContext(Dispatchers.IO) { FerBrowsNetworkInfo.lookupCountry() }
+        if (country != null) {
+            countryName = country.name
+            countryFlag = country.flag
+        } else {
+            countryName = "Не определена"
+            countryFlag = "🌐"
+        }
+        val installedVersion = runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0.0.0"
+        }.getOrDefault("0.0.0")
+        latestUpdate = withContext(Dispatchers.IO) { FerBrowsUpdater.checkLatest(installedVersion) }
+        if (latestUpdate != null) showUpdateDialog = true
+    }
+
+    LaunchedEffect(updateCheckRequested) {
+        if (updateCheckRequested > 0) {
+            val installedVersion = runCatching {
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0.0.0"
+            }.getOrDefault("0.0.0")
+            val found = withContext(Dispatchers.IO) { FerBrowsUpdater.checkLatest(installedVersion) }
+            latestUpdate = found
+            showUpdateDialog = found != null
+            if (found == null) Toast.makeText(context, "Установлена последняя версия FerBrows", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(updateDownloadId) {
+        val id = updateDownloadId ?: return@LaunchedEffect
+        while (true) {
+            val status = withContext(Dispatchers.IO) { FerBrowsUpdater.progress(context, id) }
+            updateProgress = status.percent
+            if (status.failed) {
+                updateFailed = true
+                updateDownloadId = null
+                break
+            }
+            if (status.finished) {
+                updateProgress = 100
+                completedUpdateDownloadId = id
+                updateDownloadId = null
+                val launched = FerBrowsUpdater.install(context, id)
+                if (launched) showUpdateDialog = false
+                break
+            }
+            delay(500)
+        }
+    }
+
+    LaunchedEffect(activeTabId) {
+        if (hasInitialTabSwitch) {
+            tabSwitchOverlay = true
+            delay(170)
+            tabSwitchOverlay = false
+        } else {
+            hasInitialTabSwitch = true
+        }
+    }
+
     LaunchedEffect(activeTabId, browserSettings.homePage) {
         val restored = tabs.firstOrNull { it.id == activeTabId }
         if (restored != null) {
@@ -729,7 +804,8 @@ private fun FerBrowsApp() {
                     onNewTab = { addTab() },
                     onTabs = { openTabOverview() },
                     onMenu = { menuDialog = true },
-                    networkOnline = networkOnline,
+                    countryName = countryName,
+                    countryFlag = countryFlag,
                     compact = compactBrowserChrome
                 )
 
@@ -781,6 +857,14 @@ private fun FerBrowsApp() {
                         ) {
                             HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled)
                         }
+                    }
+                    AnimatedVisibility(
+                        visible = tabSwitchOverlay,
+                        modifier = Modifier.fillMaxSize(),
+                        enter = if (browserSettings.reducedMotion) EnterTransition.None else fadeIn(tween(70)) + slideInHorizontally(tween(170)) { it / 10 },
+                        exit = if (browserSettings.reducedMotion) ExitTransition.None else fadeOut(tween(130)) + slideOutHorizontally(tween(130)) { -it / 12 }
+                    ) {
+                        Box(Modifier.fillMaxSize().background(Background.copy(alpha = 0.34f)))
                     }
                     if (pageError != null) {
                         Surface(
@@ -928,13 +1012,9 @@ private fun FerBrowsApp() {
                         showSettings = true
                         menuDialog = false
                     }
-                    MenuRow("Проверить обновления", "Открыть последнюю версию FerBrows") {
+                    MenuRow("Проверить обновления", "Проверить GitHub Releases") {
                         menuDialog = false
-                        runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Toska-0/FerBrows/releases/latest")))
-                        }.onFailure {
-                            Toast.makeText(context, "Не удалось открыть страницу обновлений", Toast.LENGTH_SHORT).show()
-                        }
+                        updateCheckRequested++
                     }
                     MenuRow("Политика конфиденциальности", "Как браузер обрабатывает данные") {
                         menuDialog = false
@@ -994,6 +1074,31 @@ private fun FerBrowsApp() {
             onPrivacyPolicy = {
                 runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Toska-0/FerBrows/blob/main/PRIVACY.md"))) }
             }
+        )
+    }
+
+    if (showUpdateDialog && latestUpdate != null) {
+        FerBrowsUpdateDialog(
+            version = latestUpdate!!.version,
+            downloading = updateDownloadId != null,
+            progress = updateProgress,
+            failed = updateFailed,
+            onDownload = {
+                runCatching {
+                    updateFailed = false
+                    updateProgress = 0
+                    completedUpdateDownloadId = null
+                    updateDownloadId = FerBrowsUpdater.enqueue(context, latestUpdate!!)
+                }.onFailure {
+                    updateFailed = true
+                    Toast.makeText(context, "Не удалось начать загрузку обновления", Toast.LENGTH_LONG).show()
+                }
+            },
+            onInstall = {
+                val id = completedUpdateDownloadId
+                if (id != null && FerBrowsUpdater.install(context, id)) showUpdateDialog = false
+            },
+            onDismiss = { if (updateDownloadId == null) showUpdateDialog = false }
         )
     }
 
