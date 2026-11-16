@@ -1,62 +1,97 @@
 # FerBrows
 
-FerBrows is an Android browser prototype with a dark AMOLED interface and lime accents. It uses the Chromium/Blink engine provided by Android System WebView.
+**FerBrows — лёгкий браузер для Android с аккуратным интерфейсом, полезными инструментами и вниманием к приватности.**
 
-## Current functionality
+Он создан для тех, кому нужен удобный браузер без обязательного аккаунта, навязчивой синхронизации и перегруженного интерфейса. Открывайте сайты, держите вкладки в порядке, сохраняйте закладки и управляйте своими данными прямо на устройстве.
 
-- Multiple tabs with a separate WebView instance per tab
-- Explicit Compose identity for the active WebView and deterministic tab state transitions
-- Restores regular open tabs and the selected tab after process restart; pages are reloaded by URL (the full in-page session, scroll position and WebView back stack are not yet restored)
-- Address bar that distinguishes HTTP(S) URLs from search queries and rejects unsupported schemes
-- Back, forward, reload and home navigation
-- History with page titles and visit timestamps, limited to the latest 100 entries; repeat visits update the existing entry
-- Persistent bookmarks with remove and reorder controls
-- System download manager integration and website file chooser
-- Main-frame loading errors shown in the browser UI
-- Basic tracker blocking for a local list of known analytics and advertising hosts
-- Safe Browsing where supported by the Android WebView provider
-- Third-party cookies disabled for the default WebView profile and mixed HTTP content blocked
+## Почему FerBrows?
 
-## Private browsing
+- **Ваши данные остаются на устройстве.** У браузера нет учётной записи FerBrows и собственной облачной синхронизации. История, закладки, настройки и список обычных вкладок хранятся локально.
+- **Пароли под вашим контролем.** Добавляйте записи вручную в менеджер сохранённых паролей. Они хранятся в зашифрованном хранилище Android и защищены ключом Android Keystore. Браузер не перехватывает заполненные формы и не предлагает автоматически сохранять пароли.
+- **Приватные вкладки.** Они отделены от обычных вкладок и не попадают в историю и сохранённый список вкладок. Для приватного режима требуется поддержка отдельных профилей установленным Android WebView.
+- **Настраиваемый внешний вид.** Тёмная, светлая и системная темы, цветовые акценты и параметры компактности интерфейса.
+- **Удобная работа с вкладками.** Переключение между страницами, обзор открытых вкладок, группы вкладок и восстановление обычных вкладок после перезапуска.
+- **Всё нужное для повседневного просмотра.** Закладки с импортом и экспортом, история, загрузки с прогрессом, снимки страниц и перевод через Google Translate.
+- **Дополнительная защита.** Safe Browsing при поддержке WebView и необязательная блокировка части известных рекламных и аналитических доменов.
 
-The menu can create a private tab using the AndroidX WebKit multi-profile API when the installed WebView provider supports it. Private tabs use a separate WebView profile, are excluded from saved tabs, bookmarks and history, and the private profile is deleted when the last private tab is closed or the app is started again after an unclean exit. If the installed WebView does not support multi-profile, FerBrows reports that private tabs are unavailable rather than silently falling back to a shared profile.
+## Возможности
 
-## Privacy and security limits
+### Просмотр сайтов
+- Открытие сайтов и поиск через Google, DuckDuckGo или Bing.
+- Переход вперёд и назад, обновление страницы и домашний экран.
+- Несколько вкладок и наглядный обзор открытых страниц.
+- Группировка вкладок и сохранение их названий.
+- Жесты у края экрана для перехода назад и вперёд.
+- Автоматическое восстановление обычных вкладок после перезапуска приложения.
 
-FerBrows is **not yet a fully hardened privacy browser**. Tracker blocking is a small built-in host list, not a comprehensive or automatically updated filter list; some trackers may pass and some site features may be affected. Safe Browsing helps warn about known dangerous sites; it does not block trackers and does not make an HTTP connection secure.
+### Закладки и история
+- Добавление, редактирование, перемещение и удаление закладок.
+- Импорт и экспорт закладок в JSON-файл.
+- История посещений с названием страницы и временем посещения.
+- Поиск по истории и её очистка.
 
-JavaScript remains enabled for website compatibility. File URL access is disabled, mixed content is blocked, and third-party cookies are disabled for the default profile. The address bar distinguishes HTTPS from HTTP; HTTPS protects the connection in transit but is not a guarantee that a site itself is trustworthy. No VPN/proxy, sync, or extension support is provided.
+### Пароли и приватность
+- Ручное создание записей с названием, сайтом, логином, паролем и заметкой.
+- Локальное шифрование записей AES-GCM; ключ хранится в Android Keystore.
+- Ручной просмотр и копирование сохранённых данных.
+- Автозаполнение только для записи, сайт которой совпадает с текущим адресом.
+- Отсутствие автоматического сбора паролей из веб-форм.
+- Очистка истории, кеша, cookie и данных сайтов.
 
-## Architecture and tests
+### Загрузки и инструменты
+- Список загрузок с отображением прогресса.
+- Открытие скачанных файлов и удаление загрузок.
+- Очистка завершённых и неудачных загрузок.
+- Снимок видимой области страницы с сохранением в Pictures/FerBrows.
+- Перевод открытой страницы через Google Translate.
+- Проверка обновлений и установка APK через стандартное подтверждение Android.
 
-- `MainActivity.kt`: activity, browser orchestration and WebView lifecycle
-- `BrowserScreens.kt`: Compose UI
-- `BrowserStore.kt`: persistent tabs, bookmarks and history
-- `BrowserNavigation.kt`: URL/search input validation
-- `BrowserTabReducer.kt`: deterministic tab state transitions
-- `TrackerProtection.kt`: known tracker host matching
+## Темы и персонализация
 
-Unit tests cover address resolution, tracker matching and tab add/close/select transitions. The GitHub Actions workflow runs these tests before building the debug APK. Automated device-level UI/WebView tests are still needed.
+Выберите подходящий режим:
+- **Тёмная** — тёмное оформление браузера.
+- **Светлая** — светлое оформление.
+- **Системная** — оформление вслед за настройками Android.
 
-## Build
+Также доступны цветовые акценты, компактный интерфейс, настройка жестов и уменьшение анимации. Для сайтов браузер использует системный механизм Android WebView: сайты с поддержкой цветовой схемы могут переключаться сами, а для остальных применяется доступное затемнение WebView.
 
-Requirements: JDK 17, Gradle 8.9 and Android SDK 35.
+## Установка
 
-```bash
-gradle testDebugUnitTest
-gradle assembleDebug
-```
+1. Откройте раздел [Releases](https://github.com/Toska-0/FerBrows/releases).
+2. Выберите последнюю стабильную версию FerBrows.
+3. Скачайте APK из вложений релиза.
+4. Откройте файл и подтвердите установку Android. При необходимости разрешите установку приложений из выбранного источника в настройках Android.
 
-The APK is created at `app/build/outputs/apk/debug/app-debug.apk`.
+Устанавливайте APK только из официального репозитория FerBrows.
 
-## GitHub Actions
+## Обновление
 
-The workflow runs unit tests and builds a debug APK on pushes and pull requests to `main`, and can also be started manually from the Actions tab. Download the `FerBrows-debug-apk` artifact from a successful run.
+FerBrows поддерживает обновление поверх установленной версии. Если вы устанавливаете новую версию вручную, скачайте APK из последнего релиза и откройте его — **не удаляйте старую версию перед обновлением**.
 
-## Engine note
+Удаление приложения стирает его локальные данные. Android также проверяет подпись APK: обновление должно быть собрано с тем же ключом подписи, что и установленная версия. Не устанавливайте тестовую Debug-сборку поверх обычной Release-сборки.
 
-This app uses Android System WebView, whose rendering engine is Chromium/Blink. It is not a separately bundled Chromium build; the installed WebView provider supplies engine updates.
+## Что важно знать
 
-## Project status
+FerBrows использует **Android System WebView** — компонент Android на базе Chromium/Blink. Движок обновляется вместе с установленным на устройстве WebView, а не поставляется отдельной копией внутри FerBrows.
 
-Early development build: 0.1.0. The browser now has reliable tab identity and cleanup, persistent metadata, basic private profiles and a starter tracker blocklist. Full WebView session restoration, a maintained filter list, robust site-permission management, sync, extension support, and automated UI/instrumentation tests remain future work.
+FerBrows не является VPN или средством полной анонимности. Приватные вкладки не скрывают активность от сайтов, интернет-провайдера, DNS-провайдера или самого устройства. Скачанные файлы могут оставаться на устройстве.
+
+Блокировка рекламы и трекеров использует небольшой встроенный список доменов. Это дополнительная мера, а не универсальный фильтр: некоторые запросы могут проходить, а отдельные функции сайтов могут работать иначе. Для отображения страны по публичному IP-адресу при запуске приложение обращается к сервису ipapi.co; этот запрос раскрывает сервису ваш текущий публичный IP-адрес.
+
+Камера, микрофон и геолокация для сайтов по умолчанию запрещены. Управление отдельными разрешениями для каждого сайта пока не предусмотрено.
+
+Облачной синхронизации, VPN, прокси и поддержки расширений в FerBrows нет. Это сделано осознанно: браузер не требует аккаунта и не отправляет ваши закладки, историю или записи менеджера паролей на собственный сервер.
+
+## Совместимость
+
+- Android 7.0 (API 24) и новее.
+- Для корректной работы сайтов рекомендуется поддерживать Android System WebView в актуальном состоянии.
+- Некоторые возможности, например отдельный профиль приватных вкладок, зависят от версии WebView на устройстве.
+
+## Обратная связь
+
+Нашли ошибку или хотите предложить улучшение? [Создайте Issue на GitHub](https://github.com/Toska-0/FerBrows/issues).
+
+---
+
+**FerBrows 1.0.0 · Toska Game Studio**
