@@ -25,6 +25,10 @@ FerBrows is an Android browser prototype with a dark AMOLED interface and lime a
 - JavaScript, homepage, search provider and tracker protection controls. Dedicated privacy and personalization screens are available from the three-dot menu; personalization includes reduced motion, compact chrome, edge-swipe navigation and five accent colors. Site camera/microphone and geolocation requests are denied by default.
 - Controls to clear history, WebView cache, cookies and website storage.
 
+## Publishing browser updates
+
+The in-app updater checks the latest stable GitHub Release and looks for an attached APK asset. To publish an update, push a version tag such as `v0.4.0`. GitHub Actions builds the APK with the configured persistent signing key, runs tests, and attaches the signed APK to the release after the UI smoke tests pass. The tag version becomes the installed app's `versionName`; the CI run number supplies a monotonically increasing `versionCode`.
+
 ## Private browsing
 
 Private tabs use a separate AndroidX WebKit profile when the installed WebView provider supports multi-profile. Private tabs are excluded from saved tabs, bookmarks and history. The private profile is deleted when the last private tab is closed or when FerBrows starts after an unclean termination. If multi-profile is unavailable, FerBrows reports that private tabs are unavailable rather than silently using the ordinary profile.
