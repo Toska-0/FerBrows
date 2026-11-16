@@ -674,6 +674,7 @@ private fun FerBrowsApp() {
             onSelect = { tab -> switchTo(tab); tabDialog = false; tabPreviews.values.forEach { runCatching { it.recycle() } }; tabPreviews = emptyMap() },
             onClose = { tab ->
                 closeTab(tab)
+                tabPreviews[tab.id]?.let { runCatching { it.recycle() } }
                 tabPreviews = tabPreviews - tab.id
             },
             onNewTab = { addTab(); tabDialog = false; tabPreviews.values.forEach { runCatching { it.recycle() } }; tabPreviews = emptyMap() },
