@@ -6,13 +6,13 @@ FerBrows is an early-stage Android browser. This policy describes the data handl
 
 ## Data stored on the device
 
-FerBrows stores browser preferences, ordinary open-tab metadata, bookmarks and a limited browsing history locally in Android application storage. Website cookies, cache and site storage are handled by Android System WebView. The application does not provide account sign-in, cloud synchronization, or its own analytics service. Android application backup is disabled for FerBrows.
+FerBrows stores browser preferences, ordinary open-tab metadata, bookmarks and a limited browsing history locally in Android application storage. Website cookies, cache and site storage are handled by Android System WebView. The application does not provide account sign-in, cloud synchronization, or its own analytics service. On launch, FerBrows requests the public-IP country from ipapi.co to display a country flag and name; this exposes the device's current public IP address to that provider. The country lookup is not used to identify the user and is not needed for browsing. Android application backup is disabled for FerBrows.
 
 Downloaded files are handed to Android DownloadManager and saved in the app-specific external Downloads directory. Android removes app-specific external files when FerBrows is uninstalled. Files may be opened from the in-app downloads list. Page screenshots are saved locally to the Pictures/FerBrows media folder on Android 10 and newer.
 
 ## Websites and search providers
 
-When you open a website, the browser connects directly to that website using Android System WebView. Search queries are sent to the search provider selected in settings (Google, DuckDuckGo or Bing). Those services process requests under their own privacy policies. If you explicitly choose Translate page, FerBrows opens Google Translate with the current page URL; Google may receive that URL and process the page under its own privacy policy.
+When you open a website, the browser connects directly to that website using Android System WebView. On launch, the updater requests public release metadata from the GitHub API. If a newer stable release with an APK asset exists, FerBrows offers to download that APK from GitHub. Download progress is read from Android DownloadManager. Installation is handed to Android's package installer and requires the user's confirmation. Search queries are sent to the search provider selected in settings (Google, DuckDuckGo or Bing). Those services process requests under their own privacy policies. If you explicitly choose Translate page, FerBrows opens Google Translate with the current page URL; Google may receive that URL and process the page under its own privacy policy.
 
 Safe Browsing is enabled where supported by the installed WebView provider. The provider may process site reputation checks under its own terms and privacy policy.
 
