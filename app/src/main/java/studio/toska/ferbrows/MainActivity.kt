@@ -398,6 +398,12 @@ private fun FerBrowsApp() {
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
             settings.javaScriptEnabled = browserSettings.javaScriptEnabled
+            if (adBlockLevel.get() != AdBlockLevel.LOW &&
+                WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                runCatching {
+                    WebViewCompat.addDocumentStartJavaScript(this, AdBlockFilterEngine.documentStartScript(), setOf("*"))
+                }
+            }
             applyWebTheme(this, darkTheme)
             settings.domStorageEnabled = true
             settings.allowFileAccess = false
