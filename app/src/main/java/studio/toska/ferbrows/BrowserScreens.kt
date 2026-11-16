@@ -268,10 +268,19 @@ fun BottomToolbar(
         ToolbarButton(Icons.Filled.ArrowBack, "Назад", canBack, onBack)
         ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward)
         ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true)
-        Box(contentAlignment = Alignment.Center) {
-            IconButton(onClick = onTabs) { Icon(Icons.Filled.Tab, "Вкладки", tint = White) }
-            Box(Modifier.padding(start = 15.dp, top = 13.dp).size(15.dp).clip(CircleShape).background(Lime), contentAlignment = Alignment.Center) {
-                Text(tabCount.toString(), color = Background, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+            IconButton(onClick = onTabs) {
+                Icon(Icons.Filled.Tab, "Вкладки", tint = White)
+            }
+            Box(
+                Modifier.align(Alignment.BottomEnd)
+                    .offset(x = 1.dp, y = 1.dp)
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(Lime),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(tabCount.toString(), color = Background, fontSize = 9.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
