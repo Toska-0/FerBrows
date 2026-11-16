@@ -40,9 +40,13 @@ fun BrowserSettingsDialog(
     var draft by remember(settings) { mutableStateOf(settings) }
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
-        Surface(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), color = Background) {
+        BoxWithConstraints(
+            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime)),
+            contentAlignment = Alignment.Center
+        ) {
+        Surface(Modifier.fillMaxWidth().fillMaxHeight(0.96f).heightIn(max = maxHeight), color = Background) {
             Column(Modifier.fillMaxSize()) {
                 Row(
                     Modifier.fillMaxWidth().padding(start = 8.dp, end = 18.dp, top = 5.dp, bottom = 10.dp),
@@ -115,7 +119,7 @@ fun BrowserSettingsDialog(
                 }
                 Surface(color = Panel, shadowElevation = 8.dp) {
                     Row(
-                        Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 9.dp, bottom = 18.dp),
+                        Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(start = 18.dp, end = 18.dp, top = 9.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp)) {
@@ -127,6 +131,7 @@ fun BrowserSettingsDialog(
                     }
                 }
             }
+        }
         }
     }
 }
