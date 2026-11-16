@@ -111,6 +111,7 @@ fun BrowserSettingsDialog(
                         )
                     }
                     }
+                    if (personalizationOnly) {
                     SettingsGroup("ПЕРСОНАЛИЗАЦИЯ", Icons.Filled.Palette) {
                         SettingsAction(
                             "Цвет акцента",
@@ -140,6 +141,7 @@ fun BrowserSettingsDialog(
                         SettingsToggle("Меньше анимаций", "Сократить декоративные переходы", draft.reducedMotion) {
                             draft = draft.copy(reducedMotion = it)
                         }
+                    }
                     }
                     if (!personalizationOnly) {
                     SettingsGroup("ДАННЫЕ И ХРАНИЛИЩЕ", Icons.Filled.Storage) {
