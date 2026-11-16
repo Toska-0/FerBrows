@@ -255,7 +255,7 @@ private fun FerBrowsApp() {
         focusedLabelColor = Lime, unfocusedLabelColor = Muted,
         focusedPlaceholderColor = Muted, unfocusedPlaceholderColor = Muted,
         cursorColor = Lime, focusedBorderColor = Lime, unfocusedBorderColor = PanelSoft,
-        containerColor = Panel
+        focusedContainerColor = Panel, unfocusedContainerColor = Panel
     )
     val store = remember { BrowserStore(context) }
     val connectivityManager = remember { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
@@ -1037,6 +1037,7 @@ private fun FerBrowsApp() {
             title = { Text("Группа вкладок", color = White) },
             text = {
                 androidx.compose.material3.OutlinedTextField(
+                            colors = browserFieldColors,
                     value = groupNameDraft,
                     onValueChange = { groupNameDraft = it.take(32) },
                     singleLine = true,
@@ -1191,27 +1192,32 @@ private fun FerBrowsApp() {
                         verticalArrangement = Arrangement.spacedBy(9.dp)
                     ) {
                         androidx.compose.material3.OutlinedTextField(
+                            colors = browserFieldColors,
                             value = credentialTitleDraft, onValueChange = { credentialTitleDraft = it.take(80) },
                             label = { Text("Название записи *") }, placeholder = { Text("Например, Google") },
                             singleLine = true, modifier = Modifier.fillMaxWidth()
                         )
                         androidx.compose.material3.OutlinedTextField(
+                            colors = browserFieldColors,
                             value = credentialWebsiteDraft, onValueChange = { credentialWebsiteDraft = it.take(240) },
                             label = { Text("Сайт (необязательно)") }, placeholder = { Text("google.com") },
                             singleLine = true, modifier = Modifier.fillMaxWidth()
                         )
                         androidx.compose.material3.OutlinedTextField(
+                            colors = browserFieldColors,
                             value = credentialUsernameDraft, onValueChange = { credentialUsernameDraft = it.take(240) },
                             label = { Text("Логин или почта *") }, singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
                         androidx.compose.material3.OutlinedTextField(
+                            colors = browserFieldColors,
                             value = credentialPasswordDraft, onValueChange = { credentialPasswordDraft = it },
                             label = { Text("Пароль *") }, singleLine = true,
                             visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth()
                         )
                         androidx.compose.material3.OutlinedTextField(
+                            colors = browserFieldColors,
                             value = credentialNoteDraft, onValueChange = { credentialNoteDraft = it.take(2000) },
                             label = { Text("Заметка") }, placeholder = { Text("Дополнительная информация") },
                             modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4
