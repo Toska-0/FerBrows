@@ -594,7 +594,7 @@ private fun FerBrowsApp() {
             val found = withContext(Dispatchers.IO) { FerBrowsUpdater.checkLatest(installedVersion) }
             latestUpdate = found
             showUpdateDialog = found != null
-            if (found == null) Toast.makeText(context, "Установлена последняя версия FerBrows", Toast.LENGTH_SHORT).show()
+            if (found == null) Toast.makeText(context, "Новых обновлений не найдено", Toast.LENGTH_SHORT).show()
         }
     }
 
