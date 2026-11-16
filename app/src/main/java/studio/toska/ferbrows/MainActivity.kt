@@ -26,7 +26,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.ValueCallback
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewCompat
@@ -169,8 +170,15 @@ private fun applyWebTheme(view: WebView, dark: Boolean) {
 private const val PRIVATE_PROFILE_NAME = "FerBrowsPrivate"
 
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val savedTheme = getSharedPreferences("ferbrows_settings", Context.MODE_PRIVATE)
+            .getString("browser_theme", BrowserTheme.DARK.name)
+        AppCompatDelegate.setDefaultNightMode(when (runCatching { BrowserTheme.valueOf(savedTheme ?: BrowserTheme.DARK.name) }.getOrDefault(BrowserTheme.DARK)) {
+            BrowserTheme.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            BrowserTheme.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+            BrowserTheme.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+        })
         super.onCreate(savedInstanceState)
         if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
             runCatching { ProfileStore.getInstance().deleteProfile(PRIVATE_PROFILE_NAME) }
@@ -1365,6 +1373,11 @@ private fun FerBrowsApp() {
                 browserSettings = updated
                 trackerProtectionEnabled.set(updated.trackerProtectionEnabled)
                 settingsStore.save(updated)
+                AppCompatDelegate.setDefaultNightMode(when (updated.theme) {
+                    BrowserTheme.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                    BrowserTheme.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+                    BrowserTheme.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+                })
                 val updatedDark = when (updated.theme) { BrowserTheme.DARK -> true; BrowserTheme.LIGHT -> false; BrowserTheme.SYSTEM -> systemDarkTheme }
                 webViews.values.forEach { view -> view.settings.javaScriptEnabled = updated.javaScriptEnabled; applyWebTheme(view, updatedDark) }
             },
