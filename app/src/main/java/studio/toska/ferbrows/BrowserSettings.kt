@@ -6,6 +6,12 @@ enum class BrowserTheme(val label: String) {
     SYSTEM("Как в системе"), LIGHT("Светлая"), DARK("Тёмная")
 }
 
+enum class AdBlockLevel(val label: String, val description: String) {
+    LOW("Слабая защита", "Блокирует основные рекламные сети, минимально влияет на сайты"),
+    MEDIUM("Средняя защита", "Блокирует популярную рекламу и рекламные трекеры"),
+    MAXIMUM("Максимальная защита", "Более строгая фильтрация; некоторые сайты могут работать некорректно")
+}
+
 enum class SearchEngine(val label: String, val template: String) {
     GOOGLE("Google", "https://www.google.com/search?q=%s"),
     DUCKDUCKGO("DuckDuckGo", "https://duckduckgo.com/?q=%s"),
@@ -17,6 +23,7 @@ data class BrowserSettings(
     val homePage: String = "",
     val javaScriptEnabled: Boolean = true,
     val trackerProtectionEnabled: Boolean = true,
+    val adBlockLevel: AdBlockLevel = AdBlockLevel.MEDIUM,
     val reducedMotion: Boolean = false,
     val compactInterface: Boolean = false,
     val swipeNavigationEnabled: Boolean = true,
@@ -34,6 +41,7 @@ class BrowserSettingsStore(context: Context) {
         homePage = prefs.getString("home_page", "").orEmpty(),
         javaScriptEnabled = prefs.getBoolean("javascript_enabled", true),
         trackerProtectionEnabled = prefs.getBoolean("tracker_protection_enabled", true),
+        adBlockLevel = runCatching { AdBlockLevel.valueOf(prefs.getString("ad_block_level", AdBlockLevel.MEDIUM.name)!!) }.getOrDefault(AdBlockLevel.MEDIUM),
         reducedMotion = prefs.getBoolean("reduced_motion", false),
         compactInterface = prefs.getBoolean("compact_interface", false),
         swipeNavigationEnabled = prefs.getBoolean("swipe_navigation_enabled", true),
@@ -47,6 +55,7 @@ class BrowserSettingsStore(context: Context) {
             .putString("home_page", settings.homePage.trim())
             .putBoolean("javascript_enabled", settings.javaScriptEnabled)
             .putBoolean("tracker_protection_enabled", settings.trackerProtectionEnabled)
+            .putString("ad_block_level", settings.adBlockLevel.name)
             .putBoolean("reduced_motion", settings.reducedMotion)
             .putBoolean("compact_interface", settings.compactInterface)
             .putBoolean("swipe_navigation_enabled", settings.swipeNavigationEnabled)
