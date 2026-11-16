@@ -8,14 +8,18 @@ FerBrows is an Android browser prototype with a dark AMOLED interface and lime a
 - Ordinary tab metadata and selected tab restored after process restart; WebView state is saved where supported and falls back to the last URL.
 - Back, forward, reload, home and HTTP(S) address/search input.
 - Search provider selection: Google, DuckDuckGo or Bing.
-- Editable/reorderable/removable bookmarks.
+- Editable/reorderable/removable bookmarks, with JSON import and export through Android's document picker.
+- Tab groups with locally persisted names.
+- Edge-swipe back/forward navigation, configurable in personalization.
+- Page screenshot capture to `Pictures/FerBrows` on Android 10+.
+- Explicit page translation through Google Translate.
 - Browsing history with title, visit time, search and clear controls.
-- Download list with live progress, open and remove actions, backed by Android DownloadManager; website file chooser.
+- Download list with live progress, open, remove and clear-completed actions, backed by Android DownloadManager; website file chooser.
 - Main-frame navigation errors and a validated offline-network warning shown in the browser.
 - Private tabs backed by AndroidX WebKit multi-profile when supported.
 - Optional blocking of a small built-in list of known advertising and analytics hosts.
 - Safe Browsing where supported by the installed WebView provider.
-- JavaScript, homepage, search provider, tracker protection and reduced-motion settings. Site camera/microphone and geolocation requests are denied by default.
+- JavaScript, homepage, search provider, tracker protection, reduced-motion and compact-interface settings. Personalization is available from the three-dot menu. Site camera/microphone and geolocation requests are denied by default.
 - Controls to clear history, WebView cache, cookies and website storage.
 
 ## Private browsing
@@ -28,7 +32,7 @@ Private mode is not anonymity: websites, network operators, DNS providers, Andro
 
 FerBrows is not yet a fully hardened privacy browser. Tracker blocking is a small built-in hostname list, not a comprehensive or automatically updated filter list. Some trackers may pass and some site features may be affected. Safe Browsing is provider-dependent; it does not block trackers and does not make HTTP secure.
 
-JavaScript is enabled by default for website compatibility and can be disabled in settings. File URL access is disabled, mixed content is blocked, and third-party cookies are disabled for the default profile. HTTPS encrypts traffic in transit but does not prove that a site itself is trustworthy. FerBrows provides no VPN, proxy, sync or extension support.
+JavaScript is enabled by default for website compatibility and can be disabled in settings. File URL access is disabled, mixed content is blocked, and third-party cookies are disabled for the default profile. HTTPS encrypts traffic in transit but does not prove that a site itself is trustworthy. FerBrows provides no VPN, proxy, cloud sync or browser extension runtime. Page translation is an explicit hand-off to Google Translate; the page URL is sent to that service. Screenshots are saved locally to the Pictures/FerBrows gallery folder.
 
 ## Architecture
 
