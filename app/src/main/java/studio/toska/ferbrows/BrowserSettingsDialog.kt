@@ -116,6 +116,10 @@ fun BrowserSettingsDialog(
                             draft = draft.copy(compactInterface = it)
                         }
                         HorizontalDivider(color = PanelSoft)
+                        SettingsToggle("Жесты навигации", "Свайп от края экрана для перехода назад или вперёд", draft.swipeNavigationEnabled) {
+                            draft = draft.copy(swipeNavigationEnabled = it)
+                        }
+                        HorizontalDivider(color = PanelSoft)
                         SettingsToggle("Меньше анимаций", "Сократить декоративные переходы", draft.reducedMotion) {
                             draft = draft.copy(reducedMotion = it)
                         }
