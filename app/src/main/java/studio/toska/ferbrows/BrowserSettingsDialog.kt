@@ -41,7 +41,8 @@ fun BrowserSettingsDialog(
     onClearHistory: () -> Unit,
     onClearSiteData: () -> Unit,
     onDismiss: () -> Unit,
-    personalizationOnly: Boolean = false
+    personalizationOnly: Boolean = false,
+    privacyOnly: Boolean = false
 ) {
     var draft by remember(settings) { mutableStateOf(settings) }
     Dialog(
@@ -60,8 +61,8 @@ fun BrowserSettingsDialog(
                 ) {
                     IconButton(onClick = onDismiss) { Icon(Icons.Filled.ArrowBack, "Назад", tint = White) }
                     Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                        Text(if (personalizationOnly) "Персонализация" else "Настройки", color = White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-                        Text(if (personalizationOnly) "Внешний вид и поведение браузера" else "Настрой FerBrows под себя", color = Muted, fontSize = 12.sp)
+                        Text(if (personalizationOnly) "Персонализация" else if (privacyOnly) "Конфиденциальность" else "Настройки", color = White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        Text(if (personalizationOnly) "Внешний вид и поведение браузера" else if (privacyOnly) "Защита и управление данными" else "Настрой FerBrows под себя", color = Muted, fontSize = 12.sp)
                     }
                     Icon(Icons.Filled.Settings, null, tint = Lime, modifier = Modifier.size(22.dp))
                 }
@@ -69,7 +70,7 @@ fun BrowserSettingsDialog(
                     Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    if (!personalizationOnly) {
+                    if (!personalizationOnly && !privacyOnly) {
                     SettingsGroup("ОСНОВНЫЕ", Icons.Filled.Language) {
                         SettingsAction("Поисковая система", draft.searchEngine.label, "Поиск из адресной строки", onClick = {
                             val engines = SearchEngine.values()
@@ -96,6 +97,8 @@ fun BrowserSettingsDialog(
                             )
                         }
                     }
+                    }
+                    if (!personalizationOnly) {
                     SettingsGroup("ПРИВАТНОСТЬ И БЕЗОПАСНОСТЬ", Icons.Filled.PrivacyTip) {
                         SettingsToggle("Защита от трекеров", "Блокировка известных отслеживающих доменов", draft.trackerProtectionEnabled) {
                             draft = draft.copy(trackerProtectionEnabled = it)
