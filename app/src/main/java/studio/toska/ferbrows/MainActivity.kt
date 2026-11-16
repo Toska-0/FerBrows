@@ -140,7 +140,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import org.json.JSONArray
-import io.github.edsuns.adfilter.AdFilter
 
 internal data class BrowserPalette(
     val background: Color, val panel: Color, val panelSoft: Color,
@@ -388,7 +387,6 @@ private fun FerBrowsApp() {
 
     fun createWebView(tabId: Int, isPrivate: Boolean): WebView {
         return WebView(context).apply {
-            AdFilter.get().setupWebView(this)
             if (isPrivate && WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
                 WebViewCompat.setProfile(this, PRIVATE_PROFILE_NAME)
             }
@@ -538,10 +536,6 @@ private fun FerBrowsApp() {
             }
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
-                    if (view != null && request != null) {
-                        val engineResponse = AdFilter.get().shouldIntercept(view, request).resourceResponse
-                        if (engineResponse != null) return engineResponse
-                    }
                     if ((trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(request?.url?.host)) ||
                         AdBlocker.shouldBlock(request?.url?.host, adBlockLevel.get())) {
                         return android.webkit.WebResourceResponse(
@@ -571,7 +565,6 @@ private fun FerBrowsApp() {
                 }
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                    AdFilter.get().performScript(view, url)
                     if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) store.clearWebViewState(tabId)
                     if (activeTabId == tabId) pageError = null
                     if (url == "about:blank") {
