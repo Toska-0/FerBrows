@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.sp
 fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, countryName: String = "Определение…", countryFlag: String = "🌐", compact: Boolean = false) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val brandWidth by animateDpAsState(
-            targetValue = if (compact) 0.dp else (maxWidth - 140.dp).coerceAtLeast(0.dp),
+            targetValue = if (compact) 0.dp else (maxWidth - 158.dp).coerceAtLeast(0.dp),
             animationSpec = tween(320),
             label = "headerBrandWidth"
         )
