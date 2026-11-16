@@ -7,6 +7,8 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +32,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,30 +70,62 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, network
         }
         IconButton(onClick = onNewTab, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) { Icon(Icons.Filled.Add, "Новая вкладка", tint = Lime, modifier = Modifier.size(if (compact) 19.dp else 24.dp)) }
         IconButton(onClick = onTabs, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) { Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.size(if (compact) 19.dp else 24.dp)) }
-        IconButton(onClick = onMenu, modifier = Modifier.size(if (compact) 38.dp else 48.dp)) { Icon(Icons.Filled.MoreVert, "Меню", tint = White, modifier = Modifier.size(if (compact) 19.dp else 24.dp)) }
+        IconButton(
+            onClick = onMenu,
+            modifier = Modifier.padding(start = 2.dp).size(if (compact) 40.dp else 44.dp)
+                .clip(CircleShape)
+                .background(PanelSoft)
+                .border(1.dp, Lime.copy(alpha = 0.35f), CircleShape)
+        ) {
+            Icon(Icons.Filled.MoreVert, "Меню", tint = Lime, modifier = Modifier.size(23.dp))
+        }
     }
 }
 
 @Composable
 fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Unit, onClose: (BrowserTab) -> Unit, reducedMotion: Boolean = false) {
+    val closingTabIds = remember { mutableStateListOf<Int>() }
+    val scope = rememberCoroutineScope()
+
     Row(
-        modifier = Modifier.fillMaxWidth().then(if (reducedMotion) Modifier else Modifier.animateContentSize()).horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+        modifier = Modifier.fillMaxWidth()
+            .then(if (reducedMotion) Modifier else Modifier.animateContentSize())
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         tabs.forEach { tab ->
             val active = tab.id == activeId
-            Row(
-                modifier = Modifier.width(150.dp).clip(RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
-                    .background(if (active) PanelSoft else Color(0xFF0A0E0A))
-                    .border(1.dp, if (active) Lime.copy(alpha = 0.42f) else Color(0xFF1B241B), RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
-                    .clickable { onSelect(tab) }.padding(start = 9.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
+            AnimatedVisibility(
+                visible = tab.id !in closingTabIds,
+                enter = if (reducedMotion) EnterTransition.None else expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
+                exit = if (reducedMotion) ExitTransition.None else shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut()
             ) {
-                Box(Modifier.size(7.dp).clip(CircleShape).background(if (active) Lime else Muted))
-                Text((if (tab.isPrivate) "ИНКОГНИТО · " else "") + tab.title.ifBlank { "Новая вкладка" }, color = if (tab.isPrivate) Lime else if (active) White else Muted,
-                    fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 7.dp))
-                IconButton(onClick = { onClose(tab) }, modifier = Modifier.size(22.dp)) {
-                    Icon(Icons.Filled.Close, "Закрыть вкладку", tint = Muted, modifier = Modifier.size(13.dp))
+                Row(
+                    modifier = Modifier.width(150.dp).clip(RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
+                        .background(if (active) PanelSoft else Color(0xFF0A0E0A))
+                        .border(1.dp, if (active) Lime.copy(alpha = 0.42f) else Color(0xFF1B241B), RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
+                        .clickable { onSelect(tab) }.padding(start = 9.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.size(7.dp).clip(CircleShape).background(if (active) Lime else Muted))
+                    Text((if (tab.isPrivate) "ИНКОГНИТО · " else "") + tab.title.ifBlank { "Новая вкладка" }, color = if (tab.isPrivate) Lime else if (active) White else Muted,
+                        fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 7.dp))
+                    IconButton(
+                        onClick = {
+                            if (tab.id !in closingTabIds) {
+                                closingTabIds.add(tab.id)
+                                scope.launch {
+                                    delay(if (reducedMotion) 1L else 190L)
+                                    onClose(tab)
+                                    closingTabIds.remove(tab.id)
+                                }
+                            }
+                        },
+                        modifier = Modifier.size(22.dp)
+                    ) {
+                        Icon(Icons.Filled.Close, "Закрыть вкладку", tint = Muted, modifier = Modifier.size(13.dp))
+                    }
                 }
             }
         }
