@@ -353,8 +353,6 @@ fun BottomToolbar(
     val horizontalPadding by animateDpAsState(if (compact) 12.dp else 22.dp, tween(duration), label = "toolbarHorizontalPadding")
     val buttonSize by animateDpAsState(if (compact) 36.dp else 50.dp, tween(duration), label = "toolbarButtonSize")
     val iconSize by animateDpAsState(if (compact) 18.dp else 25.dp, tween(duration), label = "toolbarIconSize")
-    val badgeSize by animateDpAsState(if (compact) 12.dp else 17.dp, tween(duration), label = "toolbarBadgeSize")
-
     Row(
         Modifier.fillMaxWidth()
             .background(Color(0xFF0B100B))
@@ -368,18 +366,26 @@ fun BottomToolbar(
         ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward, compact = compact, reducedMotion = reducedMotion)
         ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true, compact = compact, reducedMotion = reducedMotion)
         IconButton(onClick = onTabs, modifier = Modifier.size(buttonSize)) {
-            Box(Modifier.size(iconSize), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.fillMaxSize())
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.size(iconSize))
                 Box(
-                    Modifier.align(Alignment.BottomEnd)
-                        .offset(x = 5.dp, y = 5.dp)
-                        .size(badgeSize)
+                    Modifier.align(Alignment.TopEnd)
+                        .offset(x = (-1).dp, y = 1.dp)
+                        .defaultMinSize(minWidth = if (compact) 18.dp else 20.dp, minHeight = if (compact) 18.dp else 20.dp)
                         .clip(CircleShape)
                         .background(Lime)
-                        .border(1.5.dp, Color(0xFF0B100B), CircleShape),
+                        .border(1.5.dp, Color(0xFF0B100B), CircleShape)
+                        .padding(horizontal = 4.dp, vertical = 1.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(tabCount.toString(), color = Background, fontSize = if (compact) 6.sp else 8.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (tabCount > 99) "99+" else tabCount.toString(),
+                        color = Background,
+                        fontSize = if (compact) 9.sp else 10.sp,
+                        lineHeight = if (compact) 9.sp else 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
                 }
             }
         }
