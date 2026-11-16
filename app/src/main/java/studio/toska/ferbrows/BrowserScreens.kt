@@ -77,9 +77,6 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, network
         IconButton(
             onClick = onMenu,
             modifier = Modifier.padding(start = 2.dp).size(if (compact) 40.dp else 44.dp)
-                .clip(CircleShape)
-                .background(PanelSoft)
-                .border(1.dp, Lime.copy(alpha = 0.35f), CircleShape)
         ) {
             Icon(Icons.Filled.MoreVert, "Меню", tint = Lime, modifier = Modifier.size(23.dp))
         }
