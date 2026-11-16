@@ -8,7 +8,7 @@
         android:label="FerBrows"
         android:icon="@drawable/ic_ferbrows"
         android:roundIcon="@drawable/ic_ferbrows"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
         android:usesCleartextTraffic="true"
         android:supportsRtl="true">
         <activity
