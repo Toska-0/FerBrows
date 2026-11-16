@@ -37,6 +37,17 @@ class BrowserStoreTest {
     }
 
     @Test
+    fun persistsTabGroupNames() {
+        store.saveTabs(
+            listOf(BrowserTab(12, "Work", "https://example.com", groupName = "Работа")),
+            activeId = 12,
+            nextId = 13
+        )
+
+        assertEquals("Работа", store.loadTabs().single().groupName)
+    }
+
+    @Test
     fun privateOnlySessionDoesNotPersistAnyTab() {
         store.saveTabs(
             listOf(BrowserTab(8, "Private", "https://private.example", isPrivate = true)),
