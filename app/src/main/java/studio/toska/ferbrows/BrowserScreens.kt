@@ -248,21 +248,10 @@ fun BottomToolbar(
         ToolbarButton(Icons.Filled.ArrowBack, "Назад", canBack, onBack)
         ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward)
         ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true)
-
-        Box(modifier = Modifier.size(46.dp), contentAlignment = Alignment.Center) {
-            IconButton(onClick = onTabs, modifier = Modifier.size(42.dp)) {
-                Icon(Icons.Filled.Tab, "Вкладки", tint = White)
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 4.dp, y = (-4).dp)
-                    .size(18.dp)
-                    .clip(CircleShape)
-                    .background(Lime),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(tabCount.toString(), color = Background, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Box(contentAlignment = Alignment.Center) {
+            IconButton(onClick = onTabs) { Icon(Icons.Filled.Tab, "Вкладки", tint = White) }
+            Box(Modifier.padding(start = 15.dp, top = 13.dp).size(15.dp).clip(CircleShape).background(Lime), contentAlignment = Alignment.Center) {
+                Text(tabCount.toString(), color = Background, fontSize = 8.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -307,11 +296,7 @@ fun SimpleListDialog(
         title = { Text(title, color = White, fontWeight = FontWeight.Bold) },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 360.dp)
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 8.dp),
+                modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 if (items.isEmpty()) Text(emptyText, color = Muted)
