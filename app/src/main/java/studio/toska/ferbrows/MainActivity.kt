@@ -96,6 +96,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -127,7 +129,8 @@ import org.json.JSONArray
 internal val Background = Color(0xFF050705)
 internal val Panel = Color(0xFF111811)
 internal val PanelSoft = Color(0xFF172117)
-internal val Lime = Color(0xFFC6FF1A)
+private val LocalAccentColor = compositionLocalOf { Color(0xFFC6FF1A) }
+internal val Lime: Color @Composable get() = LocalAccentColor.current
 internal val Green = Color(0xFF4ADE80)
 internal val Muted = Color(0xFF91A38F)
 internal val White = Color(0xFFEAF2E7)
@@ -176,6 +179,10 @@ private fun FerBrowsApp() {
     var showOnboarding by remember { mutableStateOf(!onboardingPrefs.getBoolean("completed", false)) }
     val settingsStore = remember { BrowserSettingsStore(context) }
     var browserSettings by remember { mutableStateOf(settingsStore.load()) }
+    val accentColor = remember(browserSettings.accentColor) {
+        runCatching { Color(android.graphics.Color.parseColor(browserSettings.accentColor)) }
+            .getOrDefault(Color(0xFFC6FF1A))
+    }
     val trackerProtectionEnabled = remember { AtomicBoolean(browserSettings.trackerProtectionEnabled) }
     val store = remember { BrowserStore(context) }
     val connectivityManager = remember { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
@@ -705,6 +712,7 @@ private fun FerBrowsApp() {
         webView.loadUrl(target)
     }
 
+    CompositionLocalProvider(LocalAccentColor provides accentColor) {
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = Background) {
             Column(
@@ -1065,6 +1073,7 @@ private fun FerBrowsApp() {
                 TextButton(onClick = { showExitConfirm = false }) { Text("Остаться", color = Muted) }
             }
         )
+    }
     }
 }
 
