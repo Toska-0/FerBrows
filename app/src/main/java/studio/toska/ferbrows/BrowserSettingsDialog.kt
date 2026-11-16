@@ -117,6 +117,16 @@ fun BrowserSettingsDialog(
                     if (personalizationOnly) {
                     SettingsGroup("ПЕРСОНАЛИЗАЦИЯ", Icons.Filled.Palette) {
                         SettingsAction(
+                            "Тема браузера",
+                            draft.theme.label,
+                            "Оформление браузера и сайтов синхронизируется",
+                            onClick = {
+                                val themes = BrowserTheme.values()
+                                draft = draft.copy(theme = themes[(themes.indexOf(draft.theme) + 1) % themes.size])
+                            }
+                        )
+                        HorizontalDivider(color = PanelSoft)
+                        SettingsAction(
                             "Цвет акцента",
                             when (draft.accentColor.uppercase()) {
                                 "#55D6FF" -> "Голубой"
