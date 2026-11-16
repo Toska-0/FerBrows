@@ -99,10 +99,8 @@ object FerBrowsUpdater {
             val downloaded = it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
             val total = it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
             val status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-            val reason = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
             val finished = status == DownloadManager.STATUS_SUCCESSFUL
-            val failed = status == DownloadManager.STATUS_FAILED ||
-                (status == DownloadManager.STATUS_PAUSED && reason != 0)
+            val failed = status == DownloadManager.STATUS_FAILED
             val percent = if (total > 0) ((downloaded * 100L) / total).toInt().coerceIn(0, 100) else 0
             return FerBrowsDownloadProgress(downloaded, total, percent, finished, failed)
         }
