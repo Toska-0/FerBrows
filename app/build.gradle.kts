@@ -30,11 +30,16 @@ android {
         minSdk = 24
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 3
-        versionName = "0.3.0"
+        // CI passes a monotonically increasing versionCode for every build.
+        versionCode = providers.gradleProperty("versionCode").orElse("4").get().toInt()
+        versionName = providers.gradleProperty("versionName").orElse("0.3.1").get()
     }
 
     buildTypes {
+        debug {
+            // Use the persistent release certificate in CI when configured.
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
+        }
         release {
             if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
