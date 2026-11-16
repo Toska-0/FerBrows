@@ -17,6 +17,17 @@ class BrowserNavigationTest {
         assertEquals("https://www.google.com/search?q=hello+world", BrowserNavigation.resolveInput("hello world"))
     }
 
+    @Test fun selectedSearchEngineIsUsed() {
+        assertEquals(
+            "https://duckduckgo.com/?q=hello+world",
+            BrowserNavigation.resolveInput("hello world", SearchEngine.DUCKDUCKGO)
+        )
+        assertEquals(
+            "https://www.bing.com/search?q=hello+world",
+            BrowserNavigation.resolveInput("hello world", SearchEngine.BING)
+        )
+    }
+
     @Test fun unsupportedSchemesAreRejected() {
         assertNull(BrowserNavigation.resolveInput("javascript:alert(1)"))
         assertNull(BrowserNavigation.resolveInput("file:///etc/passwd"))
