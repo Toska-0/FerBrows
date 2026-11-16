@@ -121,6 +121,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import java.net.URLEncoder
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 import org.json.JSONArray
 
 internal val Background = Color(0xFF050705)
@@ -318,6 +319,30 @@ private fun FerBrowsApp() {
             android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) settings.safeBrowsingEnabled = true
             setBackgroundColor(android.graphics.Color.rgb(5, 7, 5))
+            var gestureDownX = 0f
+            var gestureDownY = 0f
+            setOnTouchListener { touchedView, event ->
+                val browser = touchedView as? WebView
+                if (browser != null && browserSettings.swipeNavigationEnabled) {
+                    val edge = 24f * context.resources.displayMetrics.density
+                    val threshold = 88f * context.resources.displayMetrics.density
+                    when (event.actionMasked) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            gestureDownX = event.x
+                            gestureDownY = event.y
+                        }
+                        android.view.MotionEvent.ACTION_UP -> {
+                            val dx = event.x - gestureDownX
+                            val dy = event.y - gestureDownY
+                            if (abs(dy) < threshold && abs(dx) > threshold) {
+                                if (gestureDownX <= edge && dx > 0 && browser.canGoBack()) browser.goBack()
+                                else if (gestureDownX >= browser.width - edge && dx < 0 && browser.canGoForward()) browser.goForward()
+                            }
+                        }
+                    }
+                }
+                false
+            }
             setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
                 try {
                     val downloadUri = Uri.parse(url)
