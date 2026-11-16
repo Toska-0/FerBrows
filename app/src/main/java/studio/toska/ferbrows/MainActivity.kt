@@ -159,6 +159,8 @@ private fun FerBrowsApp() {
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
     var tabDialog by remember { mutableStateOf(false) }
+    var groupingTab by remember { mutableStateOf<BrowserTab?>(null) }
+    var groupNameDraft by remember { mutableStateOf("") }
     var tabPreviews by remember { mutableStateOf<Map<Int, Bitmap>>(emptyMap()) }
     var menuDialog by remember { mutableStateOf(false) }
     var showBookmarks by remember { mutableStateOf(false) }
@@ -818,7 +820,39 @@ private fun FerBrowsApp() {
                 tabPreviews = tabPreviews - tab.id
             },
             onNewTab = { addTab(); tabDialog = false; tabPreviews.values.forEach { runCatching { it.recycle() } }; tabPreviews = emptyMap() },
+            onGroup = { tab -> groupingTab = tab; groupNameDraft = tab.groupName },
             onDismiss = { tabDialog = false; tabPreviews.values.forEach { runCatching { it.recycle() } }; tabPreviews = emptyMap() }
+        )
+    }
+
+    if (groupingTab != null) {
+        AlertDialog(
+            onDismissRequest = { groupingTab = null },
+            containerColor = Panel,
+            title = { Text("Группа вкладок", color = White) },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = groupNameDraft,
+                    onValueChange = { groupNameDraft = it.take(32) },
+                    singleLine = true,
+                    label = { Text("Название группы") },
+                    placeholder = { Text("Например, Работа") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val selected = groupingTab
+                    val index = tabs.indexOfFirst { it.id == selected?.id }
+                    if (index >= 0) {
+                        tabs[index] = tabs[index].copy(groupName = groupNameDraft.trim())
+                        persistTabs()
+                    }
+                    groupingTab = null
+                }) { Text("Сохранить", color = Lime) }
+            },
+            dismissButton = {
+                TextButton(onClick = { groupingTab = null }) { Text("Отмена", color = Muted) }
+            }
         )
     }
 
