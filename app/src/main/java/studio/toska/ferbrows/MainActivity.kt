@@ -385,7 +385,10 @@ private fun FerBrowsApp() {
         persistTabs()
     }
 
-    AdBlockFilterEngine.initialize(context)\n    LaunchedEffect(Unit) { AdBlockFilterEngine.refreshIfNeeded(context) }\n\n    fun createWebView(tabId: Int, isPrivate: Boolean): WebView {
+    AdBlockFilterEngine.initialize(context)
+    LaunchedEffect(Unit) { AdBlockFilterEngine.refreshIfNeeded(context) }
+
+    fun createWebView(tabId: Int, isPrivate: Boolean): WebView {
         return WebView(context).apply {
             if (isPrivate && WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
                 WebViewCompat.setProfile(this, PRIVATE_PROFILE_NAME)
