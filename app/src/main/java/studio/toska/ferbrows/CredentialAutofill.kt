@@ -31,7 +31,7 @@ internal fun credentialAutofillScript(saved: SavedCredential?): String {
 
         const usernameCandidate = list =>
           list.find(el => !isPassword(el) && !isExcluded(el) &&
-            /(^|\\b)(email|e-mail|username|user-name|login|account)(\\b|$)/i.test(identityText(el))) ||
+            /(^|\b)(email|e-mail|identifier|username|user-name|login|account)(\b|$)/i.test(identityText(el))) ||
           list.find(el => !isPassword(el) && !isExcluded(el) &&
             ((el.type || '').toLowerCase() === 'email' || /^(email|username)$/i.test(el.autocomplete || ''))) ||
           list.find(el => !isPassword(el) && !isExcluded(el) &&
