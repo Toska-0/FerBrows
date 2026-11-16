@@ -44,9 +44,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -117,8 +115,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -195,10 +191,6 @@ private fun FerBrowsApp() {
     var updateProgress by remember { mutableIntStateOf(0) }
     var updateFailed by remember { mutableStateOf(false) }
     var updateCheckRequested by remember { mutableIntStateOf(0) }
-    var tabTransitionSnapshot by remember { mutableStateOf<Bitmap?>(null) }
-    var tabTransitionDirection by remember { mutableIntStateOf(-1) }
-    var tabTransitionToken by remember { mutableIntStateOf(0) }
-    val tabTransitionProgress = remember { Animatable(1f) }
     val downloadsStore = remember { BrowserDownloadsStore(context) }
     var downloads by remember { mutableStateOf(downloadsStore.query()) }
     var showExitConfirm by remember { mutableStateOf(false) }
@@ -237,6 +229,7 @@ private fun FerBrowsApp() {
     var activeTabId by remember { mutableIntStateOf(store.loadActiveTabId().takeIf { id -> restoredTabs.any { it.id == id } } ?: restoredTabs.firstOrNull()?.id ?: 1) }
     var nextTabId by remember { mutableIntStateOf(maxOf(store.loadNextTabId(), (restoredTabs.maxOfOrNull { it.id } ?: 0) + 1)) }
     val tabs = remember { mutableStateListOf<BrowserTab>().apply { addAll(restoredTabs.ifEmpty { listOf(BrowserTab(1, "Новая вкладка", "")) }) } }
+    var homeVisibleTabId by remember { mutableIntStateOf(activeTabId.takeIf { id -> tabs.firstOrNull { it.id == id }?.url.isNullOrBlank() } ?: -1) }
     val history = remember { mutableStateListOf<HistoryEntry>().apply { addAll(store.loadHistory().take(100)) } }
     val bookmarks = remember { mutableStateListOf<String>().apply { addAll(store.loadBookmarks()) } }
     val webViews = remember { mutableStateMapOf<Int, WebView>() }
@@ -539,13 +532,17 @@ private fun FerBrowsApp() {
                     if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) store.clearWebViewState(tabId)
                     if (activeTabId == tabId) pageError = null
                     if (url == "about:blank") {
-                        if (activeTabId == tabId) { currentUrl = ""; address = ""; pageTitle = "Новая вкладка" }
+                        if (activeTabId == tabId) { currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; homeVisibleTabId = tabId }
                     } else if (!url.isNullOrBlank()) {
                         val index = tabs.indexOfFirst { it.id == tabId }
                         if (index >= 0) tabs[index] = tabs[index].copy(url = url)
                         persistTabs()
                         if (activeTabId == tabId) { currentUrl = url; address = url; loading = true }
                     }
+                }
+
+                override fun onPageCommitVisible(view: WebView?, url: String?) {
+                    if (activeTabId == tabId && !url.isNullOrBlank() && url != "about:blank") homeVisibleTabId = -1
                 }
 
                 override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: android.webkit.WebResourceError?) {
@@ -567,7 +564,7 @@ private fun FerBrowsApp() {
                     if (url == "about:blank") {
                         val index = tabs.indexOfFirst { it.id == tabId }
                         if (index >= 0) tabs[index] = tabs[index].copy(title = "Новая вкладка", url = "")
-                        if (activeTabId == tabId) { currentUrl = ""; address = ""; pageTitle = "Новая вкладка" }
+                        if (activeTabId == tabId) { currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; homeVisibleTabId = tabId }
                     } else if (!url.isNullOrBlank()) {
                         val title = view?.title?.takeIf { it.isNotBlank() } ?: url
                         val index = tabs.indexOfFirst { it.id == tabId }
@@ -581,7 +578,7 @@ private fun FerBrowsApp() {
                             while (history.size > 100) history.removeAt(history.lastIndex)
                             persistHistory()
                         }
-                        if (activeTabId == tabId) { currentUrl = url; address = url; pageTitle = title; pageError = null }
+                        if (activeTabId == tabId) { currentUrl = url; address = url; pageTitle = title; pageError = null; homeVisibleTabId = -1 }
                     }
                     if (activeTabId == tabId) { canBack = view?.canGoBack() == true; canForward = view?.canGoForward() == true; loading = false }
                     if (url != "about:blank") {
@@ -658,23 +655,6 @@ private fun FerBrowsApp() {
         }
     }
 
-    LaunchedEffect(tabTransitionToken) {
-        val snapshot = tabTransitionSnapshot
-        if (snapshot != null) {
-            if (browserSettings.reducedMotion) {
-                tabTransitionProgress.snapTo(1f)
-            } else {
-                tabTransitionProgress.snapTo(0f)
-                tabTransitionProgress.animateTo(1f, animationSpec = tween(360))
-            }
-            delay(24)
-            if (tabTransitionSnapshot === snapshot) {
-                tabTransitionSnapshot = null
-                snapshot.recycle()
-            }
-        }
-    }
-
     LaunchedEffect(activeTabId, browserSettings.homePage) {
         val restored = tabs.firstOrNull { it.id == activeTabId }
         if (restored != null) {
@@ -722,24 +702,9 @@ private fun FerBrowsApp() {
     }
     fun switchTo(tab: BrowserTab) {
         if (tab.id == activeTabId) return
-        val previousIndex = tabs.indexOfFirst { it.id == activeTabId }
-        val targetIndex = tabs.indexOfFirst { it.id == tab.id }
-        val previousView = webViews[activeTabId]
-        val snapshot = if (currentUrl.isNotBlank() && previousView != null && previousView.width > 0 && previousView.height > 0) {
-            runCatching {
-                Bitmap.createBitmap(previousView.width, previousView.height, Bitmap.Config.ARGB_8888).also { bitmap ->
-                    previousView.draw(Canvas(bitmap))
-                }
-            }.getOrNull()
-        } else null
-        tabTransitionSnapshot?.let { old ->
-            if (old !== snapshot && !old.isRecycled) old.recycle()
-        }
-        tabTransitionSnapshot = snapshot
-        tabTransitionDirection = if (targetIndex >= previousIndex) -1 else 1
-        tabTransitionToken++
         val state = BrowserTabReducer.select(BrowserTabsState(tabs.toList(), activeTabId, nextTabId), tab.id)
         activeTabId = state.activeTabId
+        homeVisibleTabId = if (tab.url.isBlank()) tab.id else -1
         persistTabs()
         updateTab(tab.url, tab.title)
         val selected = webViews[tab.id]
@@ -756,6 +721,7 @@ private fun FerBrowsApp() {
         activeTabId = next.activeTabId
         nextTabId = next.nextTabId
         currentUrl = ""; address = ""; pageTitle = "Новая вкладка"
+        homeVisibleTabId = activeTabId
         canBack = false; canForward = false; loading = false; progress = 0; pageError = null
         persistTabs()
     }
@@ -780,6 +746,7 @@ private fun FerBrowsApp() {
         persistTabs()
         val selected = tabs.first { it.id == activeTabId }
         updateTab(selected.url, selected.title)
+        homeVisibleTabId = if (selected.url.isBlank()) selected.id else -1
         canBack = webViews[selected.id]?.canGoBack() == true
         canForward = webViews[selected.id]?.canGoForward() == true
         loading = false; progress = 0; pageError = null
@@ -918,33 +885,18 @@ private fun FerBrowsApp() {
                         AndroidView(
                             factory = { webView },
                             modifier = Modifier.fillMaxSize()
-                                .alpha(if (currentUrl.isBlank()) 0f else 1f)
-                                .graphicsLayer {
-                                    translationX = if (tabTransitionSnapshot != null) {
-                                        -tabTransitionDirection * (1f - tabTransitionProgress.value) * size.width
-                                    } else 0f
-                                }
+                                .alpha(if (homeVisibleTabId == activeTabId) 0f else 1f)
                         )
                     }
                     Column(modifier = Modifier.fillMaxSize()) {
                         AnimatedVisibility(
-                            visible = currentUrl.isBlank(),
+                            visible = homeVisibleTabId == activeTabId,
                             modifier = Modifier.fillMaxSize(),
                             enter = if (browserSettings.reducedMotion) EnterTransition.None else fadeIn(),
                             exit = if (browserSettings.reducedMotion) ExitTransition.None else fadeOut()
                         ) {
                             HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled)
                         }
-                    }
-                    tabTransitionSnapshot?.let { snapshot ->
-                        Image(
-                            bitmap = snapshot.asImageBitmap(),
-                            contentDescription = null,
-                            contentScale = ContentScale.FillBounds,
-                            modifier = Modifier.fillMaxSize().graphicsLayer {
-                                translationX = tabTransitionDirection * tabTransitionProgress.value * size.width
-                            }
-                        )
                     }
                     if (pageError != null) {
                         Surface(
@@ -965,7 +917,7 @@ private fun FerBrowsApp() {
                     onHome = {
                         if (browserSettings.homePage.isNotBlank()) navigate(browserSettings.homePage)
                         else {
-                            currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; pageError = null
+                            currentUrl = ""; address = ""; pageTitle = "Новая вкладка"; pageError = null; homeVisibleTabId = activeTabId
                             webView.loadUrl("about:blank")
                             val i = tabs.indexOfFirst { it.id == activeTabId }
                             if (i >= 0) tabs[i] = tabs[i].copy(title = "Новая вкладка", url = "")
