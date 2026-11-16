@@ -43,13 +43,18 @@ jobs:
           FERBROWS_KEY_ALIAS: ${{ secrets.FERBROWS_KEY_ALIAS }}
           FERBROWS_KEY_PASSWORD: ${{ secrets.FERBROWS_KEY_PASSWORD }}
         run: gradle --no-daemon assembleDebug assembleRelease
-      - name: Upload APK
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: FerBrows-android-apks
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/release/*.apk
+          name: FerBrows-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FerBrows-release-apk
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
       - name: Run Android UI smoke tests
