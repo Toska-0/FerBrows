@@ -11,7 +11,7 @@ object TrackerProtection {
         "segment.io", "api.segment.io", "mixpanel.com", "amplitude.com",
         "clarity.ms", "bat.bing.com", "mc.yandex.ru", "metrika.yandex.ru", "metrika.yandex.com",\n        "taboola.com", "outbrain.com",
         "criteo.com", "adsrvr.org", "quantserve.com", "adnxs.com", "adform.net",
-        "sentry.io", "browser.sentry-cdn.com", "ingest.sentry.io", "o0.ingest.sentry.io",
+        "sentry.io", "browser.sentry-cdn.com", "js.sentry-cdn.com", "ingest.sentry.io", "o0.ingest.sentry.io",
         "bugsnag.com", "notify.bugsnag.com", "sessions.bugsnag.com", "api.bugsnag.com",
         "app.bugsnag.com", "fullstory.com", "mouseflow.com", "inspectlet.com"
     )
@@ -40,7 +40,7 @@ object AdBlocker {
         "serving-sys.com", "adsafeprotected.com", "moatads.com", "3lift.com",
         "sharethrough.com", "bidswitch.net", "contextweb.com", "advertising.com",
         "yieldmo.com", "inmobi.com", "applovin.com", "unity3d.com",
-        "lijit.com", "media.net", "undertone.com",\n        "sentry.io", "browser.sentry-cdn.com", "bugsnag.com"
+        "lijit.com", "media.net", "undertone.com",\n        "sentry.io", "browser.sentry-cdn.com", "js.sentry-cdn.com", "bugsnag.com"
     )
     private val maximumDomains = mediumDomains + setOf(
         "google-analytics.com", "googletagmanager.com", "connect.facebook.net",
