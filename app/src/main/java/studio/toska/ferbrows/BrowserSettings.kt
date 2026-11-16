@@ -14,7 +14,8 @@ data class BrowserSettings(
     val javaScriptEnabled: Boolean = true,
     val trackerProtectionEnabled: Boolean = true,
     val reducedMotion: Boolean = false,
-    val compactInterface: Boolean = false
+    val compactInterface: Boolean = false,
+    val swipeNavigationEnabled: Boolean = true
 )
 
 class BrowserSettingsStore(context: Context) {
@@ -28,7 +29,8 @@ class BrowserSettingsStore(context: Context) {
         javaScriptEnabled = prefs.getBoolean("javascript_enabled", true),
         trackerProtectionEnabled = prefs.getBoolean("tracker_protection_enabled", true),
         reducedMotion = prefs.getBoolean("reduced_motion", false),
-        compactInterface = prefs.getBoolean("compact_interface", false)
+        compactInterface = prefs.getBoolean("compact_interface", false),
+        swipeNavigationEnabled = prefs.getBoolean("swipe_navigation_enabled", true)
     )
 
     fun save(settings: BrowserSettings) {
@@ -39,6 +41,7 @@ class BrowserSettingsStore(context: Context) {
             .putBoolean("tracker_protection_enabled", settings.trackerProtectionEnabled)
             .putBoolean("reduced_motion", settings.reducedMotion)
             .putBoolean("compact_interface", settings.compactInterface)
+            .putBoolean("swipe_navigation_enabled", settings.swipeNavigationEnabled)
             .apply()
     }
 }
