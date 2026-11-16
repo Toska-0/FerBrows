@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -90,42 +91,65 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
 
     Row(
         modifier = Modifier.fillMaxWidth()
-            .then(if (reducedMotion) Modifier else Modifier.animateContentSize())
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         tabs.forEach { tab ->
-            val active = tab.id == activeId
-            AnimatedVisibility(
-                visible = tab.id !in closingTabIds,
-                enter = if (reducedMotion) EnterTransition.None else expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
-                exit = if (reducedMotion) ExitTransition.None else shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut()
-            ) {
-                Row(
-                    modifier = Modifier.width(150.dp).clip(RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
-                        .background(if (active) PanelSoft else Color(0xFF0A0E0A))
-                        .border(1.dp, if (active) Lime.copy(alpha = 0.42f) else Color(0xFF1B241B), RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
-                        .clickable { onSelect(tab) }.padding(start = 9.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            key(tab.id) {
+                val active = tab.id == activeId
+                val isClosing = tab.id in closingTabIds
+
+                AnimatedVisibility(
+                    visible = !isClosing,
+                    enter = EnterTransition.None,
+                    exit = if (reducedMotion) ExitTransition.None else
+                        shrinkHorizontally(
+                            animationSpec = tween(durationMillis = 220),
+                            shrinkTowards = Alignment.CenterHorizontally
+                        ) + fadeOut(animationSpec = tween(durationMillis = 160))
                 ) {
-                    Box(Modifier.size(7.dp).clip(CircleShape).background(if (active) Lime else Muted))
-                    Text((if (tab.isPrivate) "ИНКОГНИТО · " else "") + tab.title.ifBlank { "Новая вкладка" }, color = if (tab.isPrivate) Lime else if (active) White else Muted,
-                        fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 7.dp))
-                    IconButton(
-                        onClick = {
-                            if (tab.id !in closingTabIds) {
-                                closingTabIds.add(tab.id)
-                                scope.launch {
-                                    delay(if (reducedMotion) 1L else 190L)
-                                    onClose(tab)
-                                    closingTabIds.remove(tab.id)
-                                }
-                            }
-                        },
-                        modifier = Modifier.size(22.dp)
+                    Row(
+                        modifier = Modifier.width(150.dp)
+                            .clip(RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
+                            .background(if (active) PanelSoft else Color(0xFF0A0E0A))
+                            .border(
+                                1.dp,
+                                if (active) Lime.copy(alpha = 0.42f) else Color(0xFF1B241B),
+                                RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp)
+                            )
+                            .clickable(enabled = !isClosing) { onSelect(tab) }
+                            .padding(start = 9.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Filled.Close, "Закрыть вкладку", tint = Muted, modifier = Modifier.size(13.dp))
+                        Box(Modifier.size(7.dp).clip(CircleShape).background(if (active) Lime else Muted))
+                        Text(
+                            (if (tab.isPrivate) "ИНКОГНИТО · " else "") + tab.title.ifBlank { "Новая вкладка" },
+                            color = if (tab.isPrivate) Lime else if (active) White else Muted,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f).padding(start = 7.dp)
+                        )
+                        IconButton(
+                            enabled = !isClosing,
+                            onClick = {
+                                if (closingTabIds.add(tab.id)) {
+                                    if (reducedMotion) {
+                                        onClose(tab)
+                                        closingTabIds.remove(tab.id)
+                                    } else {
+                                        scope.launch {
+                                            delay(230L)
+                                            onClose(tab)
+                                            closingTabIds.remove(tab.id)
+                                        }
+                                    }
+                                }
+                            },
+                            modifier = Modifier.size(22.dp)
+                        ) {
+                            Icon(Icons.Filled.Close, "Закрыть вкладку", tint = Muted, modifier = Modifier.size(13.dp))
+                        }
                     }
                 }
             }
