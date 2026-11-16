@@ -32,7 +32,7 @@ FerBrows — экспериментальный Android-браузер на ба
 
 - App name: FerBrows
 - Package: studio.toska.ferbrows
-- Current development version: 0.2.0
+- Current development version: 0.3.0
 - Platform: Android 7.0+ (API 24+)
 - Engine: Android System WebView (Chromium/Blink provider)
 - Category: Tools / Browsers
