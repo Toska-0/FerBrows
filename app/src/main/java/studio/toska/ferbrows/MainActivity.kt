@@ -1151,6 +1151,7 @@ private fun FerBrowsApp() {
                         androidx.compose.material3.OutlinedTextField(
                             value = credentialPasswordDraft, onValueChange = { credentialPasswordDraft = it },
                             label = { Text("Пароль *") }, singleLine = true,
+                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth()
                         )
                         androidx.compose.material3.OutlinedTextField(
@@ -1175,25 +1176,29 @@ private fun FerBrowsApp() {
                                 Text("Логин: ${credential.username}", color = White, fontSize = 13.sp)
                                 if (revealed) Text("Пароль: ${credential.password}", color = White, fontSize = 13.sp)
                                 if (credential.note.isNotBlank()) Text(credential.note, color = Muted, fontSize = 12.sp)
-                                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    TextButton(onClick = {
-                                        revealedCredentialIds = if (revealed) revealedCredentialIds - credential.id else revealedCredentialIds + credential.id
-                                    }) { Text(if (revealed) "Скрыть" else "Показать", color = Lime) }
-                                    TextButton(onClick = {
-                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Логин", credential.username))
-                                        Toast.makeText(context, "Логин скопирован", Toast.LENGTH_SHORT).show()
-                                    }) { Text("Копировать логин", color = Muted) }
-                                    TextButton(onClick = {
-                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Пароль", credential.password))
-                                        Toast.makeText(context, "Пароль скопирован", Toast.LENGTH_SHORT).show()
-                                    }) { Text("Пароль", color = Muted) }
-                                    TextButton(onClick = {
-                                        credentialVault.remove(credential.id)
-                                        credentialListRefresh++
-                                        revealedCredentialIds = revealedCredentialIds - credential.id
-                                    }) { Text("Удалить", color = Color(0xFFFF7777)) }
+                                Column {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        TextButton(onClick = {
+                                            revealedCredentialIds = if (revealed) revealedCredentialIds - credential.id else revealedCredentialIds + credential.id
+                                        }) { Text(if (revealed) "Скрыть пароль" else "Показать пароль", color = Lime) }
+                                        TextButton(onClick = {
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Логин", credential.username))
+                                            Toast.makeText(context, "Логин скопирован", Toast.LENGTH_SHORT).show()
+                                        }) { Text("Копировать логин", color = Muted) }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        TextButton(onClick = {
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Пароль", credential.password))
+                                            Toast.makeText(context, "Пароль скопирован", Toast.LENGTH_SHORT).show()
+                                        }) { Text("Копировать пароль", color = Muted) }
+                                        TextButton(onClick = {
+                                            credentialVault.remove(credential.id)
+                                            credentialListRefresh++
+                                            revealedCredentialIds = revealedCredentialIds - credential.id
+                                        }) { Text("Удалить", color = Color(0xFFFF7777)) }
+                                    }
                                 }
                             }
                             Box(Modifier.fillMaxWidth().height(1.dp).background(PanelSoft))
