@@ -20,13 +20,19 @@ class BrowserSettingsStoreTest {
     }
 
     @Test
+    fun defaultsToDarkThemeForExistingInstallations() {
+        assertEquals(BrowserTheme.DARK, BrowserSettingsStore(context).load().theme)
+    }
+
+    @Test
     fun persistsPersonalizationPreferences() {
         val store = BrowserSettingsStore(context)
         val expected = BrowserSettings(
             reducedMotion = true,
             compactInterface = true,
             swipeNavigationEnabled = false,
-            accentColor = "#55D6FF"
+            accentColor = "#55D6FF",
+            theme = BrowserTheme.LIGHT
         )
 
         store.save(expected)
@@ -36,5 +42,6 @@ class BrowserSettingsStoreTest {
         assertEquals(expected.compactInterface, restored.compactInterface)
         assertEquals(expected.swipeNavigationEnabled, restored.swipeNavigationEnabled)
         assertEquals(expected.accentColor, restored.accentColor)
+        assertEquals(expected.theme, restored.theme)
     }
 }
