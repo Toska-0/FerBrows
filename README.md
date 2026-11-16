@@ -16,6 +16,9 @@ FerBrows is an Android browser prototype with a dark AMOLED interface and lime a
 - Browsing history with title, visit time, search and clear controls.
 - Download list with live progress, open, remove and clear-completed actions, backed by Android DownloadManager; website file chooser.
 - Main-frame navigation errors and a validated offline-network warning shown in the browser.
+- VPN-aware country badge based on the public IP address, with country flag and localized name.
+- In-app GitHub Releases checker and APK updater with visible download progress and Android's confirmation-based package installer.
+- Animated tab selection feedback without discarding each tab's WebView state.
 - Private tabs backed by AndroidX WebKit multi-profile when supported.
 - Optional blocking of a small built-in list of known advertising and analytics hosts.
 - Safe Browsing where supported by the installed WebView provider.
