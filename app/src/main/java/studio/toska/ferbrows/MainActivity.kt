@@ -1389,7 +1389,6 @@ private fun FerBrowsApp() {
                 browserSettings = updated
                 trackerProtectionEnabled.set(updated.trackerProtectionEnabled)
                 adBlockLevel.set(updated.adBlockLevel)
-                AdBlockEngine.setLevel(updated.adBlockLevel)
                 settingsStore.save(updated)
                 AppCompatDelegate.setDefaultNightMode(when (updated.theme) {
                     BrowserTheme.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
