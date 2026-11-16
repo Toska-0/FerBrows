@@ -286,17 +286,37 @@ private fun FerBrowsApp() {
             setBackgroundColor(android.graphics.Color.rgb(5, 7, 5))
             setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
                 try {
-                    val name = android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType)
-                    val request = DownloadManager.Request(Uri.parse(url)).setTitle(name)
-                        .setDescription("Загрузка через FerBrows").setMimeType(mimeType)
-                        .addRequestHeader("User-Agent", userAgent)
+                    val downloadUri = Uri.parse(url)
+                    val safeMimeType = mimeType?.takeIf { it.isNotBlank() } ?: "application/octet-stream"
+                    val guessedName = android.webkit.URLUtil.guessFileName(url, contentDisposition, safeMimeType)
+                    val safeName = guessedName
+                        .replace(Regex("[\\\\/:*?\\"<>|\\\\u0000-\\\\u001F]"), "_")
+                        .trim()
+                        .take(180)
+                        .ifBlank { "download" }
+                    val request = DownloadManager.Request(downloadUri)
+                        .setTitle(safeName)
+                        .setDescription("Загрузка через FerBrows")
+                        .setMimeType(safeMimeType)
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                        .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, name)
+                        .setAllowedOverMetered(true)
+                        .setAllowedOverRoaming(true)
+                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, safeName)
+                        .addRequestHeader("User-Agent", userAgent.ifBlank { settings.userAgentString ?: "Mozilla/5.0" })
+
+                    // Many download endpoints require the same session cookies as the opened page.
+                    android.webkit.CookieManager.getInstance().getCookie(url)
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { request.addRequestHeader("Cookie", it) }
+                    request.addRequestHeader("Referer", this.url ?: url)
+
                     val downloadId = (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
                     downloadsStore.remember(downloadId)
                     downloads = downloadsStore.query()
-                    Toast.makeText(context, "Загрузка началась", Toast.LENGTH_SHORT).show()
-                } catch (_: Exception) { Toast.makeText(context, "Ошибка загрузки", Toast.LENGTH_SHORT).show() }
+                    Toast.makeText(context, "Загрузка началась: $safeName", Toast.LENGTH_SHORT).show()
+                } catch (error: Exception) {
+                    Toast.makeText(context, "Не удалось начать загрузку: ${error.localizedMessage ?: "ошибка"}", Toast.LENGTH_LONG).show()
+                }
             }
             webChromeClient = object : WebChromeClient() {
                 override fun onPermissionRequest(request: android.webkit.PermissionRequest?) {
