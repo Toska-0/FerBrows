@@ -15,7 +15,8 @@ data class BrowserSettings(
     val trackerProtectionEnabled: Boolean = true,
     val reducedMotion: Boolean = false,
     val compactInterface: Boolean = false,
-    val swipeNavigationEnabled: Boolean = true
+    val swipeNavigationEnabled: Boolean = true,
+    val accentColor: String = "#C6FF1A"
 )
 
 class BrowserSettingsStore(context: Context) {
@@ -30,7 +31,8 @@ class BrowserSettingsStore(context: Context) {
         trackerProtectionEnabled = prefs.getBoolean("tracker_protection_enabled", true),
         reducedMotion = prefs.getBoolean("reduced_motion", false),
         compactInterface = prefs.getBoolean("compact_interface", false),
-        swipeNavigationEnabled = prefs.getBoolean("swipe_navigation_enabled", true)
+        swipeNavigationEnabled = prefs.getBoolean("swipe_navigation_enabled", true),
+        accentColor = prefs.getString("accent_color", "#C6FF1A") ?: "#C6FF1A"
     )
 
     fun save(settings: BrowserSettings) {
@@ -42,6 +44,7 @@ class BrowserSettingsStore(context: Context) {
             .putBoolean("reduced_motion", settings.reducedMotion)
             .putBoolean("compact_interface", settings.compactInterface)
             .putBoolean("swipe_navigation_enabled", settings.swipeNavigationEnabled)
+            .putString("accent_color", settings.accentColor)
             .apply()
     }
 }
