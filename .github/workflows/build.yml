@@ -87,13 +87,6 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Publish GitHub Release
-        if: github.ref_type == 'tag' && env.FERBROWS_HAS_RELEASE_KEY == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          name: FerBrows ${{ github.ref_name }}
-          generate_release_notes: true
-          files: app/build/outputs/apk/release/*.apk
       - name: Run Android UI smoke tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -103,3 +96,11 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: gradle --no-daemon connectedDebugAndroidTest
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag' && env.FERBROWS_HAS_RELEASE_KEY == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: FerBrows ${{ github.ref_name }}
+          generate_release_notes: true
+          files: app/build/outputs/apk/release/*.apk
