@@ -1,5 +1,9 @@
 package studio.toska.ferbrows
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -139,6 +143,10 @@ fun BrowserSettingsDialog(
 
 @Composable
 private fun SettingsGroup(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, content: @Composable ColumnScope.() -> Unit) {
+    AnimatedVisibility(
+        visible = true,
+        enter = fadeIn(tween(220)) + slideInVertically(initialOffsetY = { it / 10 })
+    ) {
     Column(Modifier.animateContentSize(), verticalArrangement = Arrangement.spacedBy(9.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(28.dp).clip(CircleShape).background(Lime.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
@@ -149,6 +157,7 @@ private fun SettingsGroup(title: String, icon: androidx.compose.ui.graphics.vect
         Surface(color = Panel, shape = RoundedCornerShape(18.dp)) {
             Column(Modifier.animateContentSize().padding(horizontal = 15.dp, vertical = 5.dp), content = content)
         }
+    }
     }
 }
 
