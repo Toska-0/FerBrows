@@ -1334,6 +1334,7 @@ private fun FerBrowsApp() {
     if (showUpdateDialog && latestUpdate != null) {
         FerBrowsUpdateDialog(
             version = latestUpdate!!.version,
+            releaseNotes = latestUpdate!!.releaseNotes,
             downloading = updateDownloadId != null,
             progress = updateProgress,
             failed = updateFailed,
