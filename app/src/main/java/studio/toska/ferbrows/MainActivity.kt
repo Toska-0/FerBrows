@@ -385,7 +385,7 @@ private fun FerBrowsApp() {
         persistTabs()
     }
 
-    fun createWebView(tabId: Int, isPrivate: Boolean): WebView {
+    AdBlockFilterEngine.initialize(context)\n    LaunchedEffect(Unit) { AdBlockFilterEngine.refreshIfNeeded(context) }\n\n    fun createWebView(tabId: Int, isPrivate: Boolean): WebView {
         return WebView(context).apply {
             if (isPrivate && WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
                 WebViewCompat.setProfile(this, PRIVATE_PROFILE_NAME)
@@ -536,8 +536,10 @@ private fun FerBrowsApp() {
             }
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
-                    if ((trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(request?.url?.host)) ||
-                        AdBlocker.shouldBlock(request?.url?.host, adBlockLevel.get())) {
+                    val requestUri = request?.url
+                    if ((trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(requestUri?.host)) ||
+                        AdBlocker.shouldBlock(requestUri?.host, adBlockLevel.get()) ||
+                        AdBlockFilterEngine.shouldBlock(requestUri, view?.url, request?.requestHeaders?.get("Accept"), adBlockLevel.get())) {
                         return android.webkit.WebResourceResponse(
                             "text/plain", "UTF-8", 204, "Blocked by FerBrows",
                             emptyMap(), ByteArrayInputStream(ByteArray(0))
@@ -618,6 +620,9 @@ private fun FerBrowsApp() {
                     }
                     if (activeTabId == tabId) { canBack = view?.canGoBack() == true; canForward = view?.canGoForward() == true; loading = false }
                     if (url != "about:blank") {
+                        AdBlockFilterEngine.cosmeticScript(url, adBlockLevel.get())?.let { script ->
+                            view?.evaluateJavascript(script, null)
+                        }
                         if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) {
                             val origin = CredentialVault.originOf(url.orEmpty())
                             val saved = origin?.let { credentialVault.forOrigin(it) }
