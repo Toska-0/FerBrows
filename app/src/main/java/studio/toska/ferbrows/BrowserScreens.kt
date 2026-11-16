@@ -86,15 +86,15 @@ fun Header(onNewTab: () -> Unit, onTabs: () -> Unit, onMenu: () -> Unit, network
 }
 
 @Composable
-fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Unit, onClose: (BrowserTab) -> Unit, reducedMotion: Boolean = false) {
+fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Unit, onClose: (BrowserTab) -> Unit, reducedMotion: Boolean = false, compact: Boolean = false) {
     val closingTabIds = remember { mutableStateListOf<Int>() }
     val scope = rememberCoroutineScope()
 
     Row(
         modifier = Modifier.fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp)
+            .padding(horizontal = if (compact) 8.dp else 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 7.dp)
     ) {
         tabs.forEach { tab ->
             key(tab.id) {
@@ -111,8 +111,8 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
                         ) + fadeOut(animationSpec = tween(durationMillis = 160))
                 ) {
                     Row(
-                        modifier = Modifier.width(150.dp)
-                            .clip(RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))
+                        modifier = Modifier.width(if (compact) 116.dp else 150.dp)
+                            .clip(RoundedCornerShape(topStart = if (compact) 10.dp else 13.dp, topEnd = if (compact) 10.dp else 13.dp))
                             .background(if (active) PanelSoft else Color(0xFF0A0E0A))
                             .border(
                                 1.dp,
@@ -120,14 +120,14 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
                                 RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp)
                             )
                             .clickable(enabled = !isClosing) { onSelect(tab) }
-                            .padding(start = 9.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                            .padding(start = if (compact) 7.dp else 9.dp, end = 3.dp, top = if (compact) 3.dp else 6.dp, bottom = if (compact) 3.dp else 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(Modifier.size(7.dp).clip(CircleShape).background(if (active) Lime else Muted))
+                        Box(Modifier.size(if (compact) 6.dp else 7.dp).clip(CircleShape).background(if (active) Lime else Muted))
                         Text(
                             (if (tab.isPrivate) "ИНКОГНИТО · " else "") + tab.title.ifBlank { "Новая вкладка" },
                             color = if (tab.isPrivate) Lime else if (active) White else Muted,
-                            fontSize = 11.sp,
+                            fontSize = if (compact) 10.sp else 11.sp,
                             maxLines = 1,
                             modifier = Modifier.weight(1f).padding(start = 7.dp)
                         )
@@ -147,9 +147,9 @@ fun TabStrip(tabs: List<BrowserTab>, activeId: Int, onSelect: (BrowserTab) -> Un
                                     }
                                 }
                             },
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(if (compact) 19.dp else 22.dp)
                         ) {
-                            Icon(Icons.Filled.Close, "Закрыть вкладку", tint = Muted, modifier = Modifier.size(13.dp))
+                            Icon(Icons.Filled.Close, "Закрыть вкладку", tint = Muted, modifier = Modifier.size(if (compact) 11.dp else 13.dp))
                         }
                     }
                 }
