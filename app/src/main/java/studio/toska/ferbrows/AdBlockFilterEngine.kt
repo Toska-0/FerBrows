@@ -152,19 +152,21 @@ internal object AdBlockFilterEngine {
     private fun compilePattern(pattern: String): Regex? {
         if (pattern.length > 350) return null
         return runCatching {
-            val out = StringBuilder("^")
-            pattern.forEachIndexed { index, ch ->
+            val anchoredHost = pattern.startsWith("||")
+            val host = if (anchoredHost) pattern.removePrefix("||").takeWhile { it != '^' && it != '/' && it != '*' && it != '|' } else ""
+            val tail = if (anchoredHost) pattern.removePrefix("||").removePrefix(host) else pattern
+            val out = StringBuilder(if (anchoredHost) "^https?://(?:[^/]+\\\\.)?" + Regex.escape(host) else "^")
+            tail.forEachIndexed { index, ch ->
                 when (ch) {
                     '*' -> out.append(".*")
                     '^' -> out.append("(?:[^A-Za-z0-9_.%-]|$)")
-                    '|' -> if (index == 0) out.append("^") else if (index == pattern.lastIndex) out.append("$") else out.append("\\|")
-                    else -> { if (ch in ".+?()[]{}\\\\") out.append('\\'); out.append(ch) }
+                    '|' -> if (!anchoredHost && index == 0) out.append("^") else if (index == tail.lastIndex) out.append("$") else out.append("\\\\|")
+                    else -> { if (ch in ".+?()[]{}\\\\\\\\") out.append('\\\\'); out.append(ch) }
                 }
             }
             Regex(out.toString(), RegexOption.IGNORE_CASE)
         }.getOrNull()
     }
-
     private fun resourceType(accept: String?): String {
         val value = accept.orEmpty().lowercase(Locale.ROOT)
         return when {
