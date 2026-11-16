@@ -43,9 +43,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -115,6 +114,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -196,6 +196,7 @@ private fun FerBrowsApp() {
     var showOnboarding by remember { mutableStateOf(!onboardingPrefs.getBoolean("completed", false)) }
     val settingsStore = remember { BrowserSettingsStore(context) }
     var browserSettings by remember { mutableStateOf(settingsStore.load()) }
+    val tabOverlayAlpha by animateFloatAsState(if (tabSwitchOverlay) 0.34f else 0f, animationSpec = tween(if (browserSettings.reducedMotion) 0 else 170), label = "tabSwitchOverlay")
     val accentColor = remember(browserSettings.accentColor) {
         runCatching { Color(android.graphics.Color.parseColor(browserSettings.accentColor)) }
             .getOrDefault(Color(0xFFC6FF1A))
@@ -859,13 +860,8 @@ private fun FerBrowsApp() {
                             HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled)
                         }
                     }
-                    AnimatedVisibility(
-                        visible = tabSwitchOverlay,
-                        modifier = Modifier.fillMaxSize(),
-                        enter = if (browserSettings.reducedMotion) EnterTransition.None else fadeIn(tween(70)) + slideInHorizontally(tween(170)) { it / 10 },
-                        exit = if (browserSettings.reducedMotion) ExitTransition.None else fadeOut(tween(130)) + slideOutHorizontally(tween(130)) { -it / 12 }
-                    ) {
-                        Box(Modifier.fillMaxSize().background(Background.copy(alpha = 0.34f)))
+                    if (tabOverlayAlpha > 0.01f) {
+                        Box(Modifier.fillMaxSize().graphicsLayer { alpha = tabOverlayAlpha }.background(Background))
                     }
                     if (pageError != null) {
                         Surface(
