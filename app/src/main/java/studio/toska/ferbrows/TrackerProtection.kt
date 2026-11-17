@@ -2,6 +2,7 @@ package studio.toska.ferbrows
 
 import java.util.Locale
 import java.net.URI
+import java.net.URI
 
 object TrackerProtection {
     private val blockedDomains = setOf(
@@ -64,6 +65,24 @@ object AdBlocker {
         val parsed = runCatching { URI(url) }.getOrNull() ?: return false
         val path = parsed.rawPath.orEmpty().lowercase(Locale.ROOT)
         val query = parsed.rawQuery.orEmpty().lowercase(Locale.ROOT)
+        val isBannerAsset = path.contains("/banners/") ||
+            path.contains("advertising_ads_banner") ||
+            path.contains("/ads/") ||
+            path.contains("/advert/") ||
+            path.endsWith("/ad.gif") || path.endsWith("/ad.png") ||
+            path.endsWith("/banner.gif") || path.endsWith("/banner.png")
+        if (isBannerAsset) return true
+        return shouldBlock(parsed.host, level)
+    }
+
+    /**
+     * URL-level rules that complement host lists without loading remote filter engines.
+     * Obvious static banner assets are removed even with conservative protection.
+     */
+    fun shouldBlockUrl(url: String?, level: AdBlockLevel): Boolean {
+        if (url.isNullOrBlank()) return false
+        val parsed = runCatching { URI(url) }.getOrNull() ?: return false
+        val path = parsed.rawPath.orEmpty().lowercase(Locale.ROOT)
         val isBannerAsset = path.contains("/banners/") ||
             path.contains("advertising_ads_banner") ||
             path.contains("/ads/") ||
