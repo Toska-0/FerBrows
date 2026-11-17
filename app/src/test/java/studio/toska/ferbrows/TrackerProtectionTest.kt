@@ -30,4 +30,30 @@ class TrackerProtectionTest {
         assertFalse(TrackerProtection.shouldBlock("notgoogle-analytics.com"))
         assertFalse(TrackerProtection.shouldBlock(null))
     }
+    @Test fun blocksKnownStaticBannerAssetUrlsAtEveryProtectionLevel() {
+        assertTrue(AdBlocker.shouldBlockUrl(
+            "https://checkadblock.ru/banners/pr_advertising_ads_banner.gif",
+            AdBlockLevel.LOW
+        ))
+        assertTrue(AdBlocker.shouldBlockUrl(
+            "https://checkadblock.ru/banners/pr_advertising_ads_banner.png",
+            AdBlockLevel.MEDIUM
+        ))
+        assertFalse(AdBlocker.shouldBlockUrl(
+            "https://example.com/images/product.png",
+            AdBlockLevel.MEDIUM
+        ))
+    }
+
+    @Test fun urlFilteringStillAppliesHostRules() {
+        assertTrue(AdBlocker.shouldBlockUrl(
+            "https://browser.sentry-cdn.com/7.0.0/bundle.min.js",
+            AdBlockLevel.MEDIUM
+        ))
+        assertFalse(AdBlocker.shouldBlockUrl(
+            "https://example.com/content.js",
+            AdBlockLevel.MEDIUM
+        ))
+    }
+
 }
