@@ -1,6 +1,7 @@
 package studio.toska.ferbrows
 
 import java.util.Locale
+import java.net.URI
 
 object TrackerProtection {
     private val blockedDomains = setOf(
@@ -52,6 +53,26 @@ object AdBlocker {
         "newrelic.com", "nr-data.net", "fullstory.com", "mouseflow.com",
         "inspectlet.com", "heap.io", "optimizely.com"
     )
+
+    /**
+     * URL-level rules that complement host lists without loading remote filter engines.
+     * Image/banner paths are checked before the LOW-level early return so obvious
+     * static ad assets are removed even with conservative protection.
+     */
+    fun shouldBlockUrl(url: String?, level: AdBlockLevel): Boolean {
+        if (url.isNullOrBlank()) return false
+        val parsed = runCatching { URI(url) }.getOrNull() ?: return false
+        val path = parsed.rawPath.orEmpty().lowercase(Locale.ROOT)
+        val query = parsed.rawQuery.orEmpty().lowercase(Locale.ROOT)
+        val isBannerAsset = path.contains("/banners/") ||
+            path.contains("advertising_ads_banner") ||
+            path.contains("/ads/") ||
+            path.contains("/advert/") ||
+            path.endsWith("/ad.gif") || path.endsWith("/ad.png") ||
+            path.endsWith("/banner.gif") || path.endsWith("/banner.png")
+        if (isBannerAsset) return true
+        return shouldBlock(parsed.host, level)
+    }
 
     fun shouldBlock(host: String?, level: AdBlockLevel): Boolean {
         if (level == AdBlockLevel.LOW && host.isNullOrBlank()) return false
