@@ -540,8 +540,7 @@ private fun FerBrowsApp() {
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
                     val requestUri = request?.url
                     if ((trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(requestUri?.host)) ||
-                        AdBlocker.shouldBlock(requestUri?.host, adBlockLevel.get()) ||
-                        false) {
+                        AdBlocker.shouldBlockUrl(requestUri?.toString(), adBlockLevel.get())) {
                         return android.webkit.WebResourceResponse(
                             "text/plain", "UTF-8", 204, "Blocked by FerBrows",
                             emptyMap(), ByteArrayInputStream(ByteArray(0))
