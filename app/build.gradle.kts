@@ -37,6 +37,9 @@ android {
 
     buildTypes {
         debug {
+            // Test builds must install alongside the public release app.
+            applicationIdSuffix = ".test"
+            versionNameSuffix = "-TEST"
             // Use the persistent release certificate in CI when configured.
             if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
         }
