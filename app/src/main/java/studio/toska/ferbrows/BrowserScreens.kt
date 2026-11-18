@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -266,7 +267,7 @@ private fun BookmarkFavicon(url: String, sizeDp: Int) {
 }
 
 @Composable
-fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: List<String>, trackerProtectionEnabled: Boolean = true) {
+fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: List<String>, trackerProtectionEnabled: Boolean = true, streetArt: Boolean = false, streetArtDrawings: Boolean = true, streetArtTypography: Boolean = true, streetArtIntensity: Int = 2, streetArtFont: String = "CONDENSED", streetArtAnimations: Boolean = true) {
     var query by remember { mutableStateOf("") }
     val sites = listOf(
         Triple("Google", "Поиск в интернете", "https://www.google.com"),
@@ -280,15 +281,15 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
     ) {
         item {
             Spacer(Modifier.height(24.dp))
-            Text("ТВОЁ ПРОСТРАНСТВО В СЕТИ", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {\n                Text("ТВОЁ ПРОСТРАНСТВО В СЕТИ", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)\n                if (streetArt && streetArtDrawings) Text("  ✦ / 〰", color = Color(0xFFFF5D8F), fontSize = 16.sp, modifier = Modifier.graphicsLayer { rotationZ = -8f })\n            }
             Spacer(Modifier.height(10.dp))
             Text("Твой интернет.", color = White, fontSize = 30.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
             Text("Без лишнего шума.", color = Lime, fontSize = 30.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
             Spacer(Modifier.height(8.dp))
-            Text("Всё важное — в одном месте.", color = Muted, fontSize = 13.sp)
+            if (streetArt && streetArtDrawings && streetArtIntensity >= 2) Text("✳  STREET MODE", color = Color(0xFFFF5D8F), fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.graphicsLayer { rotationZ = -3f })\n            Text("Всё важное — в одном месте.", color = Muted, fontSize = 13.sp)
             Spacer(Modifier.height(22.dp))
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(18.dp)).padding(14.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).background(Panel).border(if (streetArt) 1.5.dp else 1.dp, if (streetArt && streetArtDrawings) Color(0xFFFF5D8F).copy(alpha = 0.65f) else PanelSoft, RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Filled.Search, null, tint = Lime)
@@ -319,12 +320,12 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
             val site = sites[index]
             Row(
                 Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp))
-                    .background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(16.dp)).clickable { onOpen(site.third) }.padding(15.dp),
+                    .background(Panel).border(if (streetArt && streetArtDrawings) 1.2.dp else 1.dp, if (streetArt && streetArtDrawings) Color(0xFFFF5D8F).copy(alpha = 0.45f) else PanelSoft, RoundedCornerShape(16.dp)).clickable { onOpen(site.third) }.padding(15.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 BookmarkFavicon(site.third, 38)
                 Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                    Text(site.first, color = White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(site.first, color = White, fontSize = if (streetArt && streetArtTypography) 15.sp else 14.sp, fontWeight = if (streetArt && streetArtTypography) FontWeight.Black else FontWeight.SemiBold, letterSpacing = if (streetArt && streetArtTypography) (-0.5).sp else 0.sp)
                     Text(site.second, color = Muted, fontSize = 11.sp)
                 }
                 Icon(Icons.Filled.ArrowForward, null, tint = Muted, modifier = Modifier.size(17.dp))
