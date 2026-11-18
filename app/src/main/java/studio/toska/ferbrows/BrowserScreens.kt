@@ -383,7 +383,8 @@ fun BottomToolbar(
     onTabs: () -> Unit,
     tabCount: Int,
     compact: Boolean = false,
-    reducedMotion: Boolean = false
+    reducedMotion: Boolean = false,
+    streetArtInteractionEnabled: Boolean = false
 ) {
     val duration = if (reducedMotion) 0 else 300
     val verticalPadding by animateDpAsState(if (compact) 2.dp else 8.dp, tween(duration), label = "toolbarVerticalPadding")
@@ -399,10 +400,10 @@ fun BottomToolbar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ToolbarButton(Icons.Filled.ArrowBack, "Назад", canBack, onBack, compact = compact, reducedMotion = reducedMotion)
-        ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward, compact = compact, reducedMotion = reducedMotion)
-        ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true, compact = compact, reducedMotion = reducedMotion)
-        IconButton(onClick = onTabs, modifier = Modifier.size(buttonSize)) {
+        ToolbarButton(Icons.Filled.ArrowBack, "Назад", canBack, onBack, compact = compact, reducedMotion = reducedMotion, streetArtInteractionEnabled = streetArtInteractionEnabled)
+        ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward, compact = compact, reducedMotion = reducedMotion, streetArtInteractionEnabled = streetArtInteractionEnabled)
+        ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true, compact = compact, reducedMotion = reducedMotion, streetArtInteractionEnabled = streetArtInteractionEnabled)
+        Box(modifier = Modifier.size(buttonSize).then(if (streetArtInteractionEnabled) Modifier.streetSketchClick(true, onTabs) else Modifier.clickable(onClick = onTabs)), contentAlignment = Alignment.Center) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.size(iconSize))
                 Box(
