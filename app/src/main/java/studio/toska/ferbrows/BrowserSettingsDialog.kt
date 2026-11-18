@@ -180,8 +180,12 @@ fun BrowserSettingsDialog(
                                     draft = draft.copy(streetArtFont = fonts[(fonts.indexOf(draft.streetArtFont).coerceAtLeast(0) + 1) % fonts.size])
                                 })
                                 HorizontalDivider(color = PanelSoft)
-                                SettingsAction("Интенсивность эффектов", when(draft.streetArtIntensity) { 1 -> "Лёгкая"; 2 -> "Средняя"; else -> "Выраженная" }, "Изменить заметность декора", onClick = { draft = draft.copy(streetArtIntensity = draft.streetArtIntensity % 3 + 1 })
-                                })
+                                SettingsAction(
+                                    "Интенсивность эффектов",
+                                    when (draft.streetArtIntensity) { 1 -> "Лёгкая"; 2 -> "Средняя"; else -> "Выраженная" },
+                                    "Изменить заметность декора",
+                                    onClick = { draft = draft.copy(streetArtIntensity = draft.streetArtIntensity % 3 + 1) }
+                                )
                             }
                         }
                         SettingsToggle("Компактный интерфейс", "Использовать уменьшенные панели браузера", draft.compactInterface) {
