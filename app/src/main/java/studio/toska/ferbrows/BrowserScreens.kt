@@ -444,7 +444,7 @@ private fun Modifier.streetSketchClick(
     val pressed by interaction.collectIsPressedAsState()
     val progress by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (pressed) 1f else 0f,
-        animationSpec = tween(durationMillis = 150),
+        animationSpec = tween(durationMillis = if (pressed) 120 else 220),
         label = "streetSketchPress"
     )
     this
@@ -452,29 +452,36 @@ private fun Modifier.streetSketchClick(
             drawContent()
             if (progress > 0.01f) {
                 val side = minOf(size.width, size.height)
-                val radius = side * (0.48f * progress)
+                val radius = side * (0.29f * progress)
                 val center = Offset(size.width / 2f, size.height / 2f)
-                val circle = Path()
-                for (i in 0..40) {
-                    val angle = (i.toFloat() / 40f) * (Math.PI * 2.0)
-                    val wobble = 1f + 0.035f * kotlin.math.sin(i * 2.7f) + 0.018f * kotlin.math.cos(i * 4.1f)
-                    val point = Offset(
-                        center.x + (kotlin.math.cos(angle) * radius * wobble).toFloat(),
-                        center.y + (kotlin.math.sin(angle) * radius * wobble).toFloat()
-                    )
-                    if (i == 0) circle.moveTo(point.x, point.y) else circle.lineTo(point.x, point.y)
+                // Three slightly offset, hand-drawn marker loops (reference style).
+                for (ring in 0..2) {
+                    val circle = Path()
+                    for (i in 0..48) {
+                        val angle = (i.toFloat() / 48f) * (Math.PI * 2.0)
+                        val wobble = 1f + 0.045f * kotlin.math.sin(i * 2.1f + ring * 1.4) +
+                            0.025f * kotlin.math.cos(i * 3.7f + ring)
+                        val ringRadius = radius * (1f + ring * 0.045f)
+                        val point = Offset(
+                            center.x + (kotlin.math.cos(angle) * ringRadius * wobble).toFloat() + ring * 0.55f * density,
+                            center.y + (kotlin.math.sin(angle) * ringRadius * wobble).toFloat() - ring * 0.35f * density
+                        )
+                        if (i == 0) circle.moveTo(point.x, point.y) else circle.lineTo(point.x, point.y)
+                    }
+                    circle.close()
+                    drawPath(circle, accent.copy(alpha = progress * (0.78f - ring * 0.12f)),
+                        style = Stroke(width = (1.15f * density).coerceAtLeast(1f), cap = StrokeCap.Round, join = StrokeJoin.Round))
                 }
-                circle.close()
-                val alpha = progress * 0.95f
-                drawPath(circle, accent.copy(alpha = alpha), style = Stroke(width = (1.8f * density).coerceAtLeast(1f), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                // Small sketch arrow flourish, kept close to the circle.
                 val arrow = Path().apply {
-                    moveTo(center.x + radius * 0.62f, center.y - radius * 0.72f)
-                    lineTo(center.x + radius * 0.98f, center.y - radius * 0.98f)
-                    lineTo(center.x + radius * 0.86f, center.y - radius * 0.57f)
-                    moveTo(center.x + radius * 0.98f, center.y - radius * 0.98f)
-                    lineTo(center.x + radius * 0.53f, center.y - radius * 0.91f)
+                    moveTo(center.x + radius * 0.50f, center.y - radius * 0.62f)
+                    lineTo(center.x + radius * 0.92f, center.y - radius * 0.88f)
+                    lineTo(center.x + radius * 0.78f, center.y - radius * 0.42f)
+                    moveTo(center.x + radius * 0.92f, center.y - radius * 0.88f)
+                    lineTo(center.x + radius * 0.48f, center.y - radius * 0.82f)
                 }
-                drawPath(arrow, accent.copy(alpha = alpha), style = Stroke(width = (2f * density).coerceAtLeast(1f), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                drawPath(arrow, accent.copy(alpha = progress * 0.9f),
+                    style = Stroke(width = (1.4f * density).coerceAtLeast(1f), cap = StrokeCap.Round, join = StrokeJoin.Round))
             }
         }
         .clickable(
@@ -484,7 +491,6 @@ private fun Modifier.streetSketchClick(
             onClick = onClick
         )
 }
-
 @Composable
 fun ToolbarButton(
     icon: ImageVector,
