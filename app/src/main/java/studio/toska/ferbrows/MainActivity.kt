@@ -1037,7 +1037,8 @@ private fun FerBrowsApp() {
                     onTabs = { openTabOverview() },
                     tabCount = tabs.size,
                     compact = compactBrowserChrome,
-                    reducedMotion = browserSettings.reducedMotion
+                    reducedMotion = browserSettings.reducedMotion,
+                    streetArtInteractionEnabled = browserSettings.streetArtEnabled && browserSettings.streetArtDrawings && browserSettings.streetArtAnimations && !browserSettings.reducedMotion
                 )
             }
         }
