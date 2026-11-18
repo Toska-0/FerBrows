@@ -28,7 +28,13 @@ data class BrowserSettings(
     val compactInterface: Boolean = false,
     val swipeNavigationEnabled: Boolean = true,
     val accentColor: String = "#C6FF1A",
-    val theme: BrowserTheme = BrowserTheme.DARK
+    val theme: BrowserTheme = BrowserTheme.DARK,
+    val streetArtEnabled: Boolean = false,
+    val streetArtDrawings: Boolean = true,
+    val streetArtTypography: Boolean = true,
+    val streetArtAnimations: Boolean = true,
+    val streetArtIntensity: Int = 2,
+    val streetArtFont: String = "CONDENSED"
 )
 
 class BrowserSettingsStore(context: Context) {
@@ -46,7 +52,13 @@ class BrowserSettingsStore(context: Context) {
         compactInterface = prefs.getBoolean("compact_interface", false),
         swipeNavigationEnabled = prefs.getBoolean("swipe_navigation_enabled", true),
         accentColor = prefs.getString("accent_color", "#C6FF1A") ?: "#C6FF1A",
-        theme = runCatching { BrowserTheme.valueOf(prefs.getString("browser_theme", BrowserTheme.DARK.name)!!) }.getOrDefault(BrowserTheme.DARK)
+        theme = runCatching { BrowserTheme.valueOf(prefs.getString("browser_theme", BrowserTheme.DARK.name)!!) }.getOrDefault(BrowserTheme.DARK),
+        streetArtEnabled = prefs.getBoolean("street_art_enabled", false),
+        streetArtDrawings = prefs.getBoolean("street_art_drawings", true),
+        streetArtTypography = prefs.getBoolean("street_art_typography", true),
+        streetArtAnimations = prefs.getBoolean("street_art_animations", true),
+        streetArtIntensity = prefs.getInt("street_art_intensity", 2).coerceIn(1, 3),
+        streetArtFont = prefs.getString("street_art_font", "CONDENSED") ?: "CONDENSED"
     )
 
     fun save(settings: BrowserSettings) {
@@ -61,6 +73,12 @@ class BrowserSettingsStore(context: Context) {
             .putBoolean("swipe_navigation_enabled", settings.swipeNavigationEnabled)
             .putString("accent_color", settings.accentColor)
             .putString("browser_theme", settings.theme.name)
+            .putBoolean("street_art_enabled", settings.streetArtEnabled)
+            .putBoolean("street_art_drawings", settings.streetArtDrawings)
+            .putBoolean("street_art_typography", settings.streetArtTypography)
+            .putBoolean("street_art_animations", settings.streetArtAnimations)
+            .putInt("street_art_intensity", settings.streetArtIntensity)
+            .putString("street_art_font", settings.streetArtFont)
             .apply()
     }
 }
