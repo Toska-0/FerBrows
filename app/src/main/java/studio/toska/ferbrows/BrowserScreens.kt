@@ -333,7 +333,7 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
             Row(
                 Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp))
                     .background(Panel).border(if (streetArt && streetArtDrawings) 1.2.dp else 1.dp, if (streetArt && streetArtDrawings) Color(0xFFFF5D8F).copy(alpha = 0.45f) else PanelSoft, RoundedCornerShape(16.dp))
-                    .then(if (streetArt && streetArtDrawings) Modifier.streetSketchClick(true) { onOpen(site.third) } else Modifier.clickable { onOpen(site.third) })
+                    .then(if (streetArt && streetArtDrawings) Modifier.streetSketchClick(true, onClick = { onOpen(site.third) }) else Modifier.clickable { onOpen(site.third) })
                     .padding(15.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
