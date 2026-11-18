@@ -16,6 +16,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -324,7 +332,9 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
             val site = sites[index]
             Row(
                 Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp))
-                    .background(Panel).border(if (streetArt && streetArtDrawings) 1.2.dp else 1.dp, if (streetArt && streetArtDrawings) Color(0xFFFF5D8F).copy(alpha = 0.45f) else PanelSoft, RoundedCornerShape(16.dp)).clickable { onOpen(site.third) }.padding(15.dp),
+                    .background(Panel).border(if (streetArt && streetArtDrawings) 1.2.dp else 1.dp, if (streetArt && streetArtDrawings) Color(0xFFFF5D8F).copy(alpha = 0.45f) else PanelSoft, RoundedCornerShape(16.dp))
+                    .then(if (streetArt && streetArtDrawings) Modifier.streetSketchClick(true) { onOpen(site.third) } else Modifier.clickable { onOpen(site.third) })
+                    .padding(15.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 BookmarkFavicon(site.third, 38)
@@ -419,6 +429,61 @@ fun BottomToolbar(
     }
 }
 
+
+/**
+ * Brief hand-drawn feedback for Street Art controls. The outline is drawn as
+ * an irregular marker stroke and includes a small sketch arrow.
+ */
+private fun Modifier.streetSketchClick(
+    enabled: Boolean,
+    onClick: () -> Unit,
+    accent: Color = Color(0xFFFF5D8F)
+): Modifier = composed {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val progress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (pressed) 1f else 0f,
+        animationSpec = tween(durationMillis = 150),
+        label = "streetSketchPress"
+    )
+    this
+        .drawWithContent {
+            drawContent()
+            if (progress > 0.01f) {
+                val side = minOf(size.width, size.height)
+                val radius = side * (0.48f * progress)
+                val center = Offset(size.width / 2f, size.height / 2f)
+                val circle = Path()
+                for (i in 0..40) {
+                    val angle = (i.toFloat() / 40f) * (Math.PI * 2.0)
+                    val wobble = 1f + 0.035f * kotlin.math.sin(i * 2.7f) + 0.018f * kotlin.math.cos(i * 4.1f)
+                    val point = Offset(
+                        center.x + (kotlin.math.cos(angle) * radius * wobble).toFloat(),
+                        center.y + (kotlin.math.sin(angle) * radius * wobble).toFloat()
+                    )
+                    if (i == 0) circle.moveTo(point.x, point.y) else circle.lineTo(point.x, point.y)
+                }
+                circle.close()
+                val alpha = progress * 0.95f
+                drawPath(circle, accent.copy(alpha = alpha), style = Stroke(width = (1.8f * density).coerceAtLeast(1f), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                val arrow = Path().apply {
+                    moveTo(center.x + radius * 0.62f, center.y - radius * 0.72f)
+                    lineTo(center.x + radius * 0.98f, center.y - radius * 0.98f)
+                    lineTo(center.x + radius * 0.86f, center.y - radius * 0.57f)
+                    moveTo(center.x + radius * 0.98f, center.y - radius * 0.98f)
+                    lineTo(center.x + radius * 0.53f, center.y - radius * 0.91f)
+                }
+                drawPath(arrow, accent.copy(alpha = alpha), style = Stroke(width = (2f * density).coerceAtLeast(1f), cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+        }
+        .clickable(
+            enabled = enabled,
+            interactionSource = interaction,
+            indication = null,
+            onClick = onClick
+        )
+}
+
 @Composable
 fun ToolbarButton(
     icon: ImageVector,
@@ -427,12 +492,19 @@ fun ToolbarButton(
     onClick: () -> Unit,
     highlighted: Boolean = false,
     compact: Boolean = false,
-    reducedMotion: Boolean = false
+    reducedMotion: Boolean = false,
+    streetArtInteractionEnabled: Boolean = false
 ) {
     val duration = if (reducedMotion) 0 else 300
     val buttonSize by animateDpAsState(if (compact) 36.dp else 50.dp, tween(duration), label = "toolbarActionSize")
     val iconSize by animateDpAsState(if (compact) 18.dp else 25.dp, tween(duration), label = "toolbarActionIconSize")
-    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(buttonSize)) {
+    Box(
+        modifier = Modifier.size(buttonSize).then(
+            if (streetArtInteractionEnabled) Modifier.streetSketchClick(enabled, onClick)
+            else Modifier.clickable(enabled = enabled, onClick = onClick)
+        ),
+        contentAlignment = Alignment.Center
+    ) {
         Icon(icon, description, tint = when {
             highlighted -> Lime
             enabled -> White
