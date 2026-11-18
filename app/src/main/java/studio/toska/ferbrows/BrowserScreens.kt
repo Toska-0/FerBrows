@@ -301,7 +301,7 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
             Text("Всё важное — в одном месте.", color = Muted, fontSize = 13.sp)
             Spacer(Modifier.height(22.dp))
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).background(Panel).border(if (streetArt) 1.5.dp else 1.dp, if (streetArt && streetArtDrawings) Color(0xFFFF5D8F).copy(alpha = 0.65f) else PanelSoft, RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).padding(14.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Filled.Search, null, tint = Lime)
@@ -332,7 +332,7 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
             val site = sites[index]
             Row(
                 Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp))
-                    .background(Panel).border(if (streetArt && streetArtDrawings) 1.2.dp else 1.dp, if (streetArt && streetArtDrawings) Color(0xFFFF5D8F).copy(alpha = 0.45f) else PanelSoft, RoundedCornerShape(16.dp))
+                    .background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(16.dp))
                     .then(if (streetArt && streetArtDrawings) Modifier.streetSketchClick(true, onClick = { onOpen(site.third) }) else Modifier.clickable { onOpen(site.third) })
                     .padding(15.dp),
                 verticalAlignment = Alignment.CenterVertically
