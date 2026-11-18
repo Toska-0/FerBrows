@@ -281,12 +281,16 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
     ) {
         item {
             Spacer(Modifier.height(24.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {\n                Text("ТВОЁ ПРОСТРАНСТВО В СЕТИ", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)\n                if (streetArt && streetArtDrawings) Text("  ✦ / 〰", color = Color(0xFFFF5D8F), fontSize = 16.sp, modifier = Modifier.graphicsLayer { rotationZ = -8f })\n            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("ТВОЁ ПРОСТРАНСТВО В СЕТИ", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                if (streetArt && streetArtDrawings) Text("  ✦ / 〰", color = Color(0xFFFF5D8F), fontSize = 16.sp, modifier = Modifier.graphicsLayer { rotationZ = -8f })
+            }
             Spacer(Modifier.height(10.dp))
             Text("Твой интернет.", color = White, fontSize = 30.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
             Text("Без лишнего шума.", color = Lime, fontSize = 30.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
             Spacer(Modifier.height(8.dp))
-            if (streetArt && streetArtDrawings && streetArtIntensity >= 2) Text("✳  STREET MODE", color = Color(0xFFFF5D8F), fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.graphicsLayer { rotationZ = -3f })\n            Text("Всё важное — в одном месте.", color = Muted, fontSize = 13.sp)
+            if (streetArt && streetArtDrawings && streetArtIntensity >= 2) Text("✳  STREET MODE", color = Color(0xFFFF5D8F), fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.graphicsLayer { rotationZ = -3f })
+            Text("Всё важное — в одном месте.", color = Muted, fontSize = 13.sp)
             Spacer(Modifier.height(22.dp))
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).background(Panel).border(if (streetArt) 1.5.dp else 1.dp, if (streetArt && streetArtDrawings) Color(0xFFFF5D8F).copy(alpha = 0.65f) else PanelSoft, RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).padding(14.dp),
