@@ -18,7 +18,9 @@ jobs:
     env:
       FERBROWS_HAS_RELEASE_KEY: ${{ secrets.FERBROWS_KEYSTORE_BASE64 != '' }}
       FERBROWS_VERSION_CODE: ${{ github.run_number }}
-      FERBROWS_VERSION_NAME: ${{ github.ref_type == 'tag' && github.ref_name || '1.0.0' }}
+      # PR builds for the current maintenance line must carry the actual release version,
+      # not the old Gradle fallback (1.0.0). Tagged builds use their tag as before.
+      FERBROWS_VERSION_NAME: ${{ github.ref_type == 'tag' && github.ref_name || '1.1.7' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

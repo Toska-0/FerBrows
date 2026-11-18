@@ -539,9 +539,17 @@ private fun FerBrowsApp() {
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
                     val requestUri = request?.url
+                    val level = adBlockLevel.get()
+                    val engineBlocks = runCatching {
+                        AdBlockFilterEngine.shouldBlock(
+                            requestUri,
+                            request?.requestHeaders?.get("Referer"),
+                            request?.requestHeaders?.get("Accept"),
+                            level
+                        )
+                    }.getOrDefault(false)
                     if ((trackerProtectionEnabled.get() && TrackerProtection.shouldBlock(requestUri?.host)) ||
-                        AdBlocker.shouldBlock(requestUri?.host, adBlockLevel.get()) ||
-                        false) {
+                        AdBlocker.shouldBlockUrl(requestUri?.toString(), level) || engineBlocks) {
                         return android.webkit.WebResourceResponse(
                             "text/plain", "UTF-8", 204, "Blocked by FerBrows",
                             emptyMap(), ByteArrayInputStream(ByteArray(0))
@@ -569,6 +577,9 @@ private fun FerBrowsApp() {
                 }
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                    if (adBlockLevel.get() != AdBlockLevel.LOW) {
+                        runCatching { view?.evaluateJavascript(AdBlockFilterEngine.documentStartScript(), null) }
+                    }
                     if (tabs.firstOrNull { it.id == tabId }?.isPrivate != true) store.clearWebViewState(tabId)
                     if (activeTabId == tabId) pageError = null
                     if (url == "about:blank") {
@@ -601,6 +612,13 @@ private fun FerBrowsApp() {
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
+                    if (adBlockLevel.get() != AdBlockLevel.LOW && !url.isNullOrBlank() && url != "about:blank") {
+                        runCatching {
+                            AdBlockFilterEngine.cosmeticScript(url, adBlockLevel.get())?.let { script ->
+                                view?.evaluateJavascript(script, null)
+                            }
+                        }
+                    }
                     if (url == "about:blank") {
                         val index = tabs.indexOfFirst { it.id == tabId }
                         if (index >= 0) tabs[index] = tabs[index].copy(title = "Новая вкладка", url = "")
@@ -654,6 +672,14 @@ private fun FerBrowsApp() {
     }
 
     LaunchedEffect(Unit) {
+        // Load cached filter rules and refresh subscriptions off the UI thread.
+        // A network/list failure must never prevent the browser from starting.
+        launch(Dispatchers.IO) {
+            runCatching {
+                AdBlockFilterEngine.initialize(context.applicationContext)
+                AdBlockFilterEngine.refreshIfNeeded(context.applicationContext)
+            }
+        }
         val installedVersion = runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0.0.0"
         }.getOrDefault("0.0.0")
@@ -972,7 +998,7 @@ private fun FerBrowsApp() {
                             enter = if (browserSettings.reducedMotion) EnterTransition.None else fadeIn(),
                             exit = if (browserSettings.reducedMotion) ExitTransition.None else fadeOut()
                         ) {
-                            HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled)
+                            HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled, streetArt = browserSettings.streetArtEnabled, streetArtDrawings = browserSettings.streetArtDrawings, streetArtTypography = browserSettings.streetArtTypography, streetArtIntensity = browserSettings.streetArtIntensity, streetArtFont = browserSettings.streetArtFont, streetArtAnimations = browserSettings.streetArtAnimations)
                         }
                     }
                     if (tabTransition.value > 0.001f) {
@@ -1011,7 +1037,8 @@ private fun FerBrowsApp() {
                     onTabs = { openTabOverview() },
                     tabCount = tabs.size,
                     compact = compactBrowserChrome,
-                    reducedMotion = browserSettings.reducedMotion
+                    reducedMotion = browserSettings.reducedMotion,
+                    streetArtInteractionEnabled = browserSettings.streetArtEnabled && browserSettings.streetArtDrawings && browserSettings.streetArtAnimations && !browserSettings.reducedMotion
                 )
             }
         }

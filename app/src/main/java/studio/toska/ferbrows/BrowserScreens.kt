@@ -16,6 +16,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -266,7 +275,7 @@ private fun BookmarkFavicon(url: String, sizeDp: Int) {
 }
 
 @Composable
-fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: List<String>, trackerProtectionEnabled: Boolean = true) {
+fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: List<String>, trackerProtectionEnabled: Boolean = true, streetArt: Boolean = false, streetArtDrawings: Boolean = true, streetArtTypography: Boolean = true, streetArtIntensity: Int = 2, streetArtFont: String = "CONDENSED", streetArtAnimations: Boolean = true) {
     var query by remember { mutableStateOf("") }
     val sites = listOf(
         Triple("Google", "Поиск в интернете", "https://www.google.com"),
@@ -280,15 +289,19 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
     ) {
         item {
             Spacer(Modifier.height(24.dp))
-            Text("ТВОЁ ПРОСТРАНСТВО В СЕТИ", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("ТВОЁ ПРОСТРАНСТВО В СЕТИ", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                if (streetArt && streetArtDrawings) Text("  ✦ / 〰", color = Color(0xFFFF5D8F), fontSize = 16.sp, modifier = Modifier.graphicsLayer { rotationZ = -8f })
+            }
             Spacer(Modifier.height(10.dp))
             Text("Твой интернет.", color = White, fontSize = 30.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
             Text("Без лишнего шума.", color = Lime, fontSize = 30.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
             Spacer(Modifier.height(8.dp))
+            if (streetArt && streetArtDrawings && streetArtIntensity >= 2) Text("✳  STREET MODE", color = Color(0xFFFF5D8F), fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.graphicsLayer { rotationZ = -3f })
             Text("Всё важное — в одном месте.", color = Muted, fontSize = 13.sp)
             Spacer(Modifier.height(22.dp))
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(18.dp)).padding(14.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(if (streetArt && streetArtIntensity == 3) 8.dp else 18.dp)).padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Filled.Search, null, tint = Lime)
@@ -319,12 +332,14 @@ fun HomeScreen(onSearch: (String) -> Unit, onOpen: (String) -> Unit, bookmarks: 
             val site = sites[index]
             Row(
                 Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp))
-                    .background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(16.dp)).clickable { onOpen(site.third) }.padding(15.dp),
+                    .background(Panel).border(1.dp, PanelSoft, RoundedCornerShape(16.dp))
+                    .then(if (streetArt && streetArtDrawings) Modifier.streetSketchClick(true, onClick = { onOpen(site.third) }) else Modifier.clickable { onOpen(site.third) })
+                    .padding(15.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 BookmarkFavicon(site.third, 38)
                 Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                    Text(site.first, color = White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(site.first, color = White, fontSize = if (streetArt && streetArtTypography) 15.sp else 14.sp, fontWeight = if (streetArt && streetArtTypography) FontWeight.Black else FontWeight.SemiBold, letterSpacing = if (streetArt && streetArtTypography) (-0.5).sp else 0.sp)
                     Text(site.second, color = Muted, fontSize = 11.sp)
                 }
                 Icon(Icons.Filled.ArrowForward, null, tint = Muted, modifier = Modifier.size(17.dp))
@@ -368,7 +383,8 @@ fun BottomToolbar(
     onTabs: () -> Unit,
     tabCount: Int,
     compact: Boolean = false,
-    reducedMotion: Boolean = false
+    reducedMotion: Boolean = false,
+    streetArtInteractionEnabled: Boolean = false
 ) {
     val duration = if (reducedMotion) 0 else 300
     val verticalPadding by animateDpAsState(if (compact) 2.dp else 8.dp, tween(duration), label = "toolbarVerticalPadding")
@@ -384,10 +400,10 @@ fun BottomToolbar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ToolbarButton(Icons.Filled.ArrowBack, "Назад", canBack, onBack, compact = compact, reducedMotion = reducedMotion)
-        ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward, compact = compact, reducedMotion = reducedMotion)
-        ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true, compact = compact, reducedMotion = reducedMotion)
-        IconButton(onClick = onTabs, modifier = Modifier.size(buttonSize)) {
+        ToolbarButton(Icons.Filled.ArrowBack, "Назад", canBack, onBack, compact = compact, reducedMotion = reducedMotion, streetArtInteractionEnabled = streetArtInteractionEnabled)
+        ToolbarButton(Icons.Filled.ArrowForward, "Вперёд", canForward, onForward, compact = compact, reducedMotion = reducedMotion, streetArtInteractionEnabled = streetArtInteractionEnabled)
+        ToolbarButton(Icons.Filled.Home, "Домой", true, onHome, highlighted = true, compact = compact, reducedMotion = reducedMotion, streetArtInteractionEnabled = streetArtInteractionEnabled)
+        Box(modifier = Modifier.size(buttonSize).then(if (streetArtInteractionEnabled) Modifier.streetSketchClick(true, onTabs) else Modifier.clickable(onClick = onTabs)), contentAlignment = Alignment.Center) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.Tab, "Вкладки", tint = White, modifier = Modifier.size(iconSize))
                 Box(
@@ -414,6 +430,67 @@ fun BottomToolbar(
     }
 }
 
+
+/**
+ * Brief hand-drawn feedback for Street Art controls. The outline is drawn as
+ * an irregular marker stroke and includes a small sketch arrow.
+ */
+private fun Modifier.streetSketchClick(
+    enabled: Boolean,
+    onClick: () -> Unit,
+    accent: Color = Color(0xFFFF5D8F)
+): Modifier = composed {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val progress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (pressed) 1f else 0f,
+        animationSpec = tween(durationMillis = if (pressed) 120 else 220),
+        label = "streetSketchPress"
+    )
+    this
+        .drawWithContent {
+            drawContent()
+            if (progress > 0.01f) {
+                val side = minOf(size.width, size.height)
+                val radius = side * (0.29f * progress)
+                val center = Offset(size.width / 2f, size.height / 2f)
+                // Three slightly offset, hand-drawn marker loops (reference style).
+                for (ring in 0..2) {
+                    val circle = Path()
+                    for (i in 0..48) {
+                        val angle = (i.toFloat() / 48f) * (Math.PI * 2.0)
+                        val wobble = 1f + 0.045f * kotlin.math.sin(i * 2.1f + ring * 1.4) +
+                            0.025f * kotlin.math.cos(i * 3.7f + ring)
+                        val ringRadius = radius * (1f + ring * 0.045f)
+                        val point = Offset(
+                            center.x + (kotlin.math.cos(angle) * ringRadius * wobble).toFloat() + ring * 0.55f * density,
+                            center.y + (kotlin.math.sin(angle) * ringRadius * wobble).toFloat() - ring * 0.35f * density
+                        )
+                        if (i == 0) circle.moveTo(point.x, point.y) else circle.lineTo(point.x, point.y)
+                    }
+                    circle.close()
+                    drawPath(circle, accent.copy(alpha = progress * (0.78f - ring * 0.12f)),
+                        style = Stroke(width = (1.15f * density).coerceAtLeast(1f), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                }
+                // Small sketch arrow flourish, kept close to the circle.
+                val arrow = Path().apply {
+                    moveTo(center.x + radius * 0.50f, center.y - radius * 0.62f)
+                    lineTo(center.x + radius * 0.92f, center.y - radius * 0.88f)
+                    lineTo(center.x + radius * 0.78f, center.y - radius * 0.42f)
+                    moveTo(center.x + radius * 0.92f, center.y - radius * 0.88f)
+                    lineTo(center.x + radius * 0.48f, center.y - radius * 0.82f)
+                }
+                drawPath(arrow, accent.copy(alpha = progress * 0.9f),
+                    style = Stroke(width = (1.4f * density).coerceAtLeast(1f), cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+        }
+        .clickable(
+            enabled = enabled,
+            interactionSource = interaction,
+            indication = null,
+            onClick = onClick
+        )
+}
 @Composable
 fun ToolbarButton(
     icon: ImageVector,
@@ -422,12 +499,19 @@ fun ToolbarButton(
     onClick: () -> Unit,
     highlighted: Boolean = false,
     compact: Boolean = false,
-    reducedMotion: Boolean = false
+    reducedMotion: Boolean = false,
+    streetArtInteractionEnabled: Boolean = false
 ) {
     val duration = if (reducedMotion) 0 else 300
     val buttonSize by animateDpAsState(if (compact) 36.dp else 50.dp, tween(duration), label = "toolbarActionSize")
     val iconSize by animateDpAsState(if (compact) 18.dp else 25.dp, tween(duration), label = "toolbarActionIconSize")
-    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(buttonSize)) {
+    Box(
+        modifier = Modifier.size(buttonSize).then(
+            if (streetArtInteractionEnabled) Modifier.streetSketchClick(enabled, onClick)
+            else Modifier.clickable(enabled = enabled, onClick = onClick)
+        ),
+        contentAlignment = Alignment.Center
+    ) {
         Icon(icon, description, tint = when {
             highlighted -> Lime
             enabled -> White
