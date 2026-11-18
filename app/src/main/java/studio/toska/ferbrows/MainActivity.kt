@@ -998,7 +998,7 @@ private fun FerBrowsApp() {
                             enter = if (browserSettings.reducedMotion) EnterTransition.None else fadeIn(),
                             exit = if (browserSettings.reducedMotion) ExitTransition.None else fadeOut()
                         ) {
-                            HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled)
+                            HomeScreen(onSearch = { navigate(it) }, onOpen = { navigate(it) }, bookmarks = bookmarks, trackerProtectionEnabled = browserSettings.trackerProtectionEnabled, streetArt = browserSettings.streetArtEnabled, streetArtDrawings = browserSettings.streetArtDrawings, streetArtTypography = browserSettings.streetArtTypography, streetArtIntensity = browserSettings.streetArtIntensity, streetArtFont = browserSettings.streetArtFont, streetArtAnimations = browserSettings.streetArtAnimations)
                         }
                     }
                     if (tabTransition.value > 0.001f) {
