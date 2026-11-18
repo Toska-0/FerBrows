@@ -158,6 +158,32 @@ fun BrowserSettingsDialog(
                             }
                         )
                         HorizontalDivider(color = PanelSoft)
+                        Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Street Art", color = White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                Surface(color = Color(0xFFB66AFF), shape = RoundedCornerShape(6.dp)) {
+                                    Text("ЭКСПЕРИМЕНТАЛЬНО", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp))
+                                }
+                            }
+                            Text("Стиль NFS Unbound: рисованные акценты, контуры и выразительная типографика.", color = Muted, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 3.dp, bottom = 6.dp))
+                            SettingsToggle("Рисованные эффекты", "Включить экспериментальное оформление", draft.streetArtEnabled) { draft = draft.copy(streetArtEnabled = it) }
+                            if (draft.streetArtEnabled) {
+                                HorizontalDivider(color = PanelSoft)
+                                SettingsToggle("Граффити и скетчи", "Рисованные декоративные элементы", draft.streetArtDrawings) { draft = draft.copy(streetArtDrawings = it) }
+                                HorizontalDivider(color = PanelSoft)
+                                SettingsToggle("Акцентная типографика", "Толстые и сжатые заголовки", draft.streetArtTypography) { draft = draft.copy(streetArtTypography = it) }
+                                HorizontalDivider(color = PanelSoft)
+                                SettingsToggle("Анимации", "Динамичные появления и микроэффекты", draft.streetArtAnimations) { draft = draft.copy(streetArtAnimations = it) }
+                                HorizontalDivider(color = PanelSoft)
+                                SettingsAction("Шрифт", when(draft.streetArtFont) { "WIDE" -> "Широкий"; "SKEW" -> "Наклонный"; else -> "Сжатый (Condensed)" }, "Переключить характер шрифта", onClick = {
+                                    val fonts = listOf("CONDENSED", "WIDE", "SKEW")
+                                    draft = draft.copy(streetArtFont = fonts[(fonts.indexOf(draft.streetArtFont).coerceAtLeast(0) + 1) % fonts.size])
+                                })
+                                HorizontalDivider(color = PanelSoft)
+                                SettingsAction("Интенсивность эффектов", when(draft.streetArtIntensity) { 1 -> "Лёгкая"; 2 -> "Средняя"; else -> "Выраженная" }, "Изменить заметность декора", onClick = { draft = draft.copy(streetArtIntensity = draft.streetArtIntensity % 3 + 1 })
+                                })
+                            }
+                        }
                         SettingsToggle("Компактный интерфейс", "Использовать уменьшенные панели браузера", draft.compactInterface) {
                             draft = draft.copy(compactInterface = it)
                         }
